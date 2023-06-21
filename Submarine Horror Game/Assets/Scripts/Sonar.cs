@@ -16,6 +16,10 @@ public class Sonar : MonoBehaviour
     private Vector3 pingOrigin;
     private float pingDistance;
 
+    private bool pingEnabled = false;
+
+    public bool PingEnabled { get { return pingEnabled; } }
+
     private void Awake()
     {
         if (Instance != null)
@@ -28,34 +32,50 @@ public class Sonar : MonoBehaviour
         }
     }
 
+    private void OnEnable()
+    {
+        InputManager.Instance.pingEvent += Ping;
+    }
+
+    private void OnDisable()
+    {
+        InputManager.Instance.pingEvent -= Ping;
+    }
+
     private void Start()
     {
         material.SetFloat("_PingMaxDistance", pingMaxDistance);
-
-        Ping();
+        material.SetFloat("_PingDistance", pingMaxDistance);
     }
 
     void Update()
     {
-        pingDistance += pingSpeed * Time.deltaTime;
-
-        if (pingDistance > pingMaxDistance)
+        if (pingEnabled)
         {
-            Ping();
-        }
-        else
-        {
-            material.SetFloat("_PingDistance", pingDistance);
+            if (pingDistance > pingMaxDistance)
+            {
+                pingEnabled = false;
+            }
+            else
+            {
+                pingDistance += pingSpeed * Time.deltaTime;
+                material.SetFloat("_PingDistance", pingDistance);
+            }
         } 
     }
 
     private void Ping()
     {
-        pingOrigin = transform.position;
-        material.SetVector("_PingOrigin", pingOrigin);
-        pingLight.position = pingOrigin;
+        if (!pingEnabled)
+        {
+            pingOrigin = transform.position;
+            material.SetVector("_PingOrigin", pingOrigin);
+            pingLight.position = pingOrigin;
 
-        pingDistance = 0;
-        material.SetFloat("_PingDistance", pingDistance);
+            pingDistance = 0;
+            material.SetFloat("_PingDistance", pingDistance);
+
+            pingEnabled = true;
+        }
     }
 }
