@@ -13,10 +13,14 @@ public class Sonar : MonoBehaviour
 
     [SerializeField] private Transform pingLight;
 
+    [SerializeField] private float pingHold;
+
     private Vector3 pingOrigin;
     private float pingDistance;
 
     private bool pingEnabled = false;
+
+    private float lastPing = -10000;
 
     public bool PingEnabled { get { return pingEnabled; } }
 
@@ -61,7 +65,11 @@ public class Sonar : MonoBehaviour
                 pingDistance += pingSpeed * Time.deltaTime;
                 material.SetFloat("_PingDistance", pingDistance);
             }
-        } 
+        }
+        else if (Time.time <= lastPing + pingHold)
+        {
+            Ping();
+        }
     }
 
     private void Ping()
@@ -76,6 +84,10 @@ public class Sonar : MonoBehaviour
             material.SetFloat("_PingDistance", pingDistance);
 
             pingEnabled = true;
+        }
+        else
+        {
+            lastPing = Time.time;
         }
     }
 }

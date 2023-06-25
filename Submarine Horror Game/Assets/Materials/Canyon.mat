@@ -115,8 +115,8 @@ Material:
     - _Metallic: 0
     - _OcclusionStrength: 1
     - _Parallax: 0.005
-    - _PingDistance: 2.9927154
-    - _PingMaxDistance: 4
+    - _PingDistance: 2.74681
+    - _PingMaxDistance: 3
     - _Pinging: 1
     - _QueueControl: 0
     - _QueueOffset: 0
@@ -134,6 +134,6 @@ Material:
     - _BaseColor: {r: 1, g: 1, b: 1, a: 1}
     - _Color: {r: 1, g: 1, b: 1, a: 1}
     - _EmissionColor: {r: 0, g: 0, b: 0, a: 1}
-    - _PingOrigin: {r: -0.34033176, g: 1.7904468, b: -6.3650823, a: 0}
+    - _PingOrigin: {r: -0.11, g: 1.9, b: -8.1, a: 0}
     - _SpecColor: {r: 0.2, g: 0.2, b: 0.2, a: 1}
   m_BuildTextureStacks: []
