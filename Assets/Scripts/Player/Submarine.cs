@@ -2,107 +2,117 @@ using UnityEngine;
 
 public class Submarine : MonoBehaviour
 {
-    [SerializeField] private float thrust;
+	#region Variables
 
-    [SerializeField] private float turnSpeed;
+	[SerializeField] private float m_thrust;
+	[SerializeField] private float m_turnSpeed;
 
-    private Vector3 movement;
+	private Rigidbody m_rb;
 
-    private Vector2 lookInput;
+	private Vector3 m_movement;
+	private Vector2 m_lookInput;
 
-    private Rigidbody rb;
+	private Vector2 m_xScreenLimit;
+	private Vector2 m_yScreenLimit;
 
-    private Vector2 xScreenLimit;
-    private Vector2 yScreenLimit;
+	private bool m_isLookPositional = true;
 
-    private bool isLookPositional = true;
+	#endregion
 
-    private void Awake()
-    {
-        rb = GetComponent<Rigidbody>();
-    }
+	#region Unity
 
-    private void Start()
-    {
-        xScreenLimit.x = Screen.width * 0.25f;
-        xScreenLimit.y = Screen.width * 0.75f;
+	private void Awake()
+	{
+		m_rb = GetComponent<Rigidbody>();
+	}
 
-        yScreenLimit.x = Screen.height * 0.25f;
-        yScreenLimit.y = Screen.height * 0.75f;
-    }
+	private void Start()
+	{
+		m_xScreenLimit.x = Screen.width * 0.25f;
+		m_xScreenLimit.y = Screen.width * 0.75f;
 
-    private void OnEnable()
-    {
-        InputManager.Instance.deviceChangedEvent += OnControlSchemeChange;
-        InputManager.Instance.moveEvent += OnMoveInput;
-        InputManager.Instance.lookPositionalEvent += OnLookPositional;
-        InputManager.Instance.lookStickEvent += OnLookStick;
-    }
+		m_yScreenLimit.x = Screen.height * 0.25f;
+		m_yScreenLimit.y = Screen.height * 0.75f;
+	}
 
-    private void OnDisable()
-    {
-        InputManager.Instance.deviceChangedEvent -= OnControlSchemeChange;
-        InputManager.Instance.moveEvent -= OnMoveInput;
-        InputManager.Instance.lookPositionalEvent -= OnLookPositional;
-        InputManager.Instance.lookStickEvent -= OnLookStick;
-    }
+	private void OnEnable()
+	{
+		InputManager.Instance.DeviceChangedEvent += OnControlSchemeChange;
+		InputManager.Instance.MoveEvent += OnMoveInput;
+		InputManager.Instance.LookPositionalEvent += OnLookPositional;
+		InputManager.Instance.LookStickEvent += OnLookStick;
+	}
 
-    private void FixedUpdate()
-    {
-        float xRot = 0, yRot = 0;
+	private void OnDisable()
+	{
+		InputManager.Instance.DeviceChangedEvent -= OnControlSchemeChange;
+		InputManager.Instance.MoveEvent -= OnMoveInput;
+		InputManager.Instance.LookPositionalEvent -= OnLookPositional;
+		InputManager.Instance.LookStickEvent -= OnLookStick;
+	}
 
-        if (isLookPositional)
-        {
-            if (lookInput.x < xScreenLimit.x)
-            {
-                // Rotate left
-                yRot = -1;
-            }
-            else if (lookInput.x > xScreenLimit.y)
-            {
-                // Rotate right
-                yRot = 1;
-            }
+	private void FixedUpdate()
+	{
+		float xRot = 0, yRot = 0;
 
-            if (lookInput.y < yScreenLimit.x)
-            {
-                // Rotate up
-                xRot = 1;
-            }
-            else if (lookInput.y > yScreenLimit.y)
-            {
-                // Rotate down
-                xRot = -1;
-            }
-        }
-        else
-        {
-            xRot = -lookInput.y;
-            yRot = lookInput.x;
-        }
+		if (m_isLookPositional)
+		{
+			if (m_lookInput.x < m_xScreenLimit.x)
+			{
+				// Rotate left
+				yRot = -1;
+			}
+			else if (m_lookInput.x > m_xScreenLimit.y)
+			{
+				// Rotate right
+				yRot = 1;
+			}
 
-        rb.MoveRotation(rb.rotation * Quaternion.Euler(new Vector3(xRot, yRot, 0) * turnSpeed * Time.fixedDeltaTime));
+			if (m_lookInput.y < m_yScreenLimit.x)
+			{
+				// Rotate up
+				xRot = 1;
+			}
+			else if (m_lookInput.y > m_yScreenLimit.y)
+			{
+				// Rotate down
+				xRot = -1;
+			}
+		}
+		else
+		{
+			xRot = -m_lookInput.y;
+			yRot = m_lookInput.x;
+		}
 
-        rb.AddRelativeForce(movement * thrust);
-    }
+		m_rb.MoveRotation(m_rb.rotation * Quaternion.Euler(m_turnSpeed * Time.fixedDeltaTime * new Vector3(xRot, yRot, 0)));
 
-    private void OnControlSchemeChange()
-    {
-        isLookPositional = InputManager.Instance.currentControlScheme == ControlScheme.KeyboardAndMouse;
-        lookInput = Vector2.zero;
-    }
+		m_rb.AddRelativeForce(m_movement * m_thrust);
+	}
 
-    private void OnMoveInput(Vector3 input) => movement = input;
+	#endregion
 
-    private void OnLookStick(Vector2 input)
-    {
-        isLookPositional = false;
-        lookInput = input;
-    }
+	#region Control handling
 
-    private void OnLookPositional(Vector2 input)
-    {
-        isLookPositional = true;
-        lookInput = input;
-    }
+	private void OnControlSchemeChange()
+	{
+		m_isLookPositional = InputManager.Instance.CurrentControlScheme == ControlScheme.KeyboardAndMouse;
+		m_lookInput = Vector2.zero;
+	}
+
+	private void OnMoveInput(Vector3 input) => m_movement = input;
+
+	private void OnLookStick(Vector2 input)
+	{
+		m_isLookPositional = false;
+		m_lookInput = input;
+	}
+
+	private void OnLookPositional(Vector2 input)
+	{
+		m_isLookPositional = true;
+		m_lookInput = input;
+	}
+
+	#endregion
 }

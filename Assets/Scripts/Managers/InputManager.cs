@@ -4,121 +4,108 @@ using UnityEngine.InputSystem;
 
 public class InputManager : MonoBehaviour
 {
-    public static InputManager Instance { get; private set; }
+	#region Variables
 
-    private PlayerInputActions playerInputActions;
+	public static InputManager Instance { get; private set; }
 
-    public PlayerInput playerInput;
+	public PlayerInput PlayerInput;
 
-    public ControlScheme currentControlScheme;
+	public ControlScheme CurrentControlScheme;
 
-    // Device management
-    public Action deviceChangedEvent = delegate { };
+	// Device management
+	public Action DeviceChangedEvent = delegate { };
 
-    // Gameplay events
-    public Action pingEvent = delegate { };
+	// Gameplay events
+	public Action PingEvent = delegate { };
+	public Action<Vector3> MoveEvent = delegate { };
+	public Action<Vector2> LookStickEvent = delegate { };
+	public Action<Vector2> LookPositionalEvent = delegate { };
 
-    public Action<Vector3> moveEvent = delegate { };
+	private PlayerInputActions m_playerInputActions;
 
-    public Action<Vector2> lookStickEvent = delegate { };
+	#endregion
 
-    public Action<Vector2> lookPositionalEvent = delegate { };
+	private void Awake()
+	{
+		if (Instance != null)
+			Destroy(this);
+		else
+			Instance = this;
+	}
 
-    private void Awake()
-    {
-        if (Instance != null)
-        {
-            Destroy(this);
-        }
-        else
-        {
-            Instance = this;
-        }
-    }
+	private void OnEnable()
+	{
+		// Device management
+		UpdateControlScheme();
+		PlayerInput.onControlsChanged += OnDeviceChanged;
 
-    private void OnEnable()
-    {
-        // Device management
-        UpdateControlScheme();
-        playerInput.onControlsChanged += OnDeviceChanged;
+		m_playerInputActions = new PlayerInputActions();
+		m_playerInputActions.Gameplay.Enable();
 
-        playerInputActions = new PlayerInputActions();
-        playerInputActions.Gameplay.Enable();
+		// Gameplay actions
+		m_playerInputActions.Gameplay.Ping.performed += OnPing;
 
-        // Gameplay actions
-        playerInputActions.Gameplay.Ping.performed += OnPing;
+		m_playerInputActions.Gameplay.Movement.started += OnMove;
+		m_playerInputActions.Gameplay.Movement.performed += OnMove;
+		m_playerInputActions.Gameplay.Movement.canceled += OnMove;
 
-        playerInputActions.Gameplay.Movement.started += OnMove;
-        playerInputActions.Gameplay.Movement.performed += OnMove;
-        playerInputActions.Gameplay.Movement.canceled += OnMove;
+		m_playerInputActions.Gameplay.LookStick.started += OnLookStick;
+		m_playerInputActions.Gameplay.LookStick.performed += OnLookStick;
+		m_playerInputActions.Gameplay.LookStick.canceled += OnLookStick;
 
-        playerInputActions.Gameplay.LookStick.started += OnLookStick;
-        playerInputActions.Gameplay.LookStick.performed += OnLookStick;
-        playerInputActions.Gameplay.LookStick.canceled += OnLookStick;
+		m_playerInputActions.Gameplay.LookPositional.started += OnLookPositional;
+		m_playerInputActions.Gameplay.LookPositional.performed += OnLookPositional;
+		m_playerInputActions.Gameplay.LookPositional.canceled += OnLookPositional;
+	}
 
-        playerInputActions.Gameplay.LookPositional.started += OnLookPositional;
-        playerInputActions.Gameplay.LookPositional.performed += OnLookPositional;
-        playerInputActions.Gameplay.LookPositional.canceled += OnLookPositional;
-    }
+	private void OnDisable()
+	{
+		// Device management
+		PlayerInput.onControlsChanged -= OnDeviceChanged;
 
-    private void OnDisable()
-    {
-        // Device management
-        playerInput.onControlsChanged -= OnDeviceChanged;
+		// Gameplay actions
+		m_playerInputActions.Gameplay.Ping.performed -= OnPing;
 
-        // Gameplay actions
-        playerInputActions.Gameplay.Ping.performed -= OnPing;
+		m_playerInputActions.Gameplay.Movement.started -= OnMove;
+		m_playerInputActions.Gameplay.Movement.performed -= OnMove;
+		m_playerInputActions.Gameplay.Movement.canceled -= OnMove;
 
-        playerInputActions.Gameplay.Movement.started -= OnMove;
-        playerInputActions.Gameplay.Movement.performed -= OnMove;
-        playerInputActions.Gameplay.Movement.canceled -= OnMove;
+		m_playerInputActions.Gameplay.LookStick.started -= OnLookStick;
+		m_playerInputActions.Gameplay.LookStick.performed -= OnLookStick;
+		m_playerInputActions.Gameplay.LookStick.canceled -= OnLookStick;
 
-        playerInputActions.Gameplay.LookStick.started -= OnLookStick;
-        playerInputActions.Gameplay.LookStick.performed -= OnLookStick;
-        playerInputActions.Gameplay.LookStick.canceled -= OnLookStick;
+		m_playerInputActions.Gameplay.LookPositional.started -= OnLookPositional;
+		m_playerInputActions.Gameplay.LookPositional.performed -= OnLookPositional;
+		m_playerInputActions.Gameplay.LookPositional.canceled -= OnLookPositional;
+	}
 
-        playerInputActions.Gameplay.LookPositional.started -= OnLookPositional;
-        playerInputActions.Gameplay.LookPositional.performed -= OnLookPositional;
-        playerInputActions.Gameplay.LookPositional.canceled -= OnLookPositional;
-    }
+	private void UpdateControlScheme()
+	{
+		CurrentControlScheme = PlayerInput.currentControlScheme switch
+		{
+			"KBM" => ControlScheme.KeyboardAndMouse,
+			"Gamepad" => ControlScheme.Gamepad,
+			_ => ControlScheme.KeyboardAndMouse,
+		};
 
-    private void UpdateControlScheme()
-    {
-        string controlSchemeName = playerInput.currentControlScheme;
+		DeviceChangedEvent.Invoke();
+	}
 
-        switch (controlSchemeName)
-        {
-            case "KBM":
-                currentControlScheme = ControlScheme.KeyboardAndMouse;
-                break;
+	// Device management
+	private void OnDeviceChanged(PlayerInput _) => UpdateControlScheme();
 
-            case "Gamepad":
-                currentControlScheme = ControlScheme.Gamepad;
-                break;
+	// Gameplay functions
+	private void OnPing(InputAction.CallbackContext context) => PingEvent.Invoke();
 
-            default:
-                currentControlScheme = ControlScheme.KeyboardAndMouse;
-                break;
-        }
+	private void OnMove(InputAction.CallbackContext context) => MoveEvent.Invoke(context.ReadValue<Vector3>());
 
-        deviceChangedEvent.Invoke();
-    }
+	private void OnLookStick(InputAction.CallbackContext context) => LookStickEvent.Invoke(context.ReadValue<Vector2>());
 
-    // Device management
-    private void OnDeviceChanged(PlayerInput _) => UpdateControlScheme();
-
-    // Gameplay functions
-    private void OnPing(InputAction.CallbackContext context) => pingEvent.Invoke();
-
-    private void OnMove(InputAction.CallbackContext context) => moveEvent.Invoke(context.ReadValue<Vector3>());
-
-    private void OnLookStick(InputAction.CallbackContext context) => lookStickEvent.Invoke(context.ReadValue<Vector2>());
-
-    private void OnLookPositional(InputAction.CallbackContext context) => lookPositionalEvent.Invoke(context.ReadValue<Vector2>());
+	private void OnLookPositional(InputAction.CallbackContext context) => LookPositionalEvent.Invoke(context.ReadValue<Vector2>());
 }
 
 public enum ControlScheme
 {
-    KeyboardAndMouse,
-    Gamepad
+	KeyboardAndMouse,
+	Gamepad
 }

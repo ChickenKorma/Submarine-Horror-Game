@@ -7,85 +7,79 @@ using UnityEngine;
 
 public static class GraphData
 {
-    public static void SaveGraph(Node[] nodes, string filePath)
-    {
-        using StreamWriter writer = new StreamWriter(filePath, false);
+	public static void SaveGraph(Node[] nodes, string filePath)
+	{
+		using StreamWriter writer = new(filePath, false);
 
-        for (int i = 0; i < nodes.Length; i++)
-        {
-            Node node = nodes[i];
-            List<string> nodeData = new List<string>
-            {
-                node.Index.ToString(),
-                node.Position.x.ToString(),
-                node.Position.y.ToString(),
-                node.Position.z.ToString()
-            };
+		for (int i = 0; i < nodes.Length; i++)
+		{
+			Node node = nodes[i];
+			List<string> nodeData = new()
+			{
+				node.Index.ToString(),
+				node.Position.x.ToString(),
+				node.Position.y.ToString(),
+				node.Position.z.ToString()
+			};
 
-            foreach (int connectionIndex in node.ConnectionIndexes)
-            {
-                nodeData.Add(connectionIndex.ToString());
-            }
+			foreach (int connectionIndex in node.ConnectionIndexes)
+			{
+				nodeData.Add(connectionIndex.ToString());
+			}
 
-            writer.WriteLine(string.Join(',', nodeData));
-        }
-    }
+			writer.WriteLine(string.Join(',', nodeData));
+		}
+	}
 
-    public static GraphModel LoadGraph(string filePath)
-    {
-        List<Node> nodes = new List<Node>();
+	public static GraphModel LoadGraph(string filePath)
+	{
+		List<Node> nodes = new();
 
-        using (StreamReader reader = new StreamReader(filePath))
-        {
-            while (reader.Peek() >= 0)
-            {
-                string nodeData = reader.ReadLine();
-                nodes.Add(TextToNode(nodeData));
-            }
-        }
+		using (StreamReader reader = new(filePath))
+		{
+			while (reader.Peek() >= 0)
+			{
+				string nodeData = reader.ReadLine();
+				nodes.Add(TextToNode(nodeData));
+			}
+		}
 
-        GraphModel graph = new GraphModel();
-        graph.Nodes = nodes.ToArray();
+		return new() { Nodes = nodes.ToArray() };
+	}
 
-        return graph;
-    }
+	public static GraphModel LoadGraph(TextAsset asset)
+	{
+		string[] lines = asset.text.Split(new char[] { '\r', '\n' });
 
-    public static GraphModel LoadGraph(TextAsset asset)
-    {
-        string[] lines = asset.text.Split(new char[] { '\r', '\n' });
+		List<Node> nodes = new();
 
-        List<Node> nodes = new List<Node>();
+		foreach (string line in lines)
+		{
+			if (!string.IsNullOrEmpty(line))
+			{
+				nodes.Add(TextToNode(line));
+			}
+		}
 
-        foreach (string line in lines)
-        {
-            if (!string.IsNullOrEmpty(line))
-            {
-                nodes.Add(TextToNode(line));
-            }
-        }
+		return new() { Nodes = nodes.ToArray() };
+	}
 
-        GraphModel graph = new GraphModel();
-        graph.Nodes = nodes.ToArray();
+	private static Node TextToNode(string text)
+	{
+		string[] nodeData = text.Split(',');
 
-        return graph;
-    }
+		int index = int.Parse(nodeData[0]);
+		float posX = float.Parse(nodeData[1]);
+		float posY = float.Parse(nodeData[2]);
+		float posZ = float.Parse(nodeData[3]);
 
-    private static Node TextToNode(string text)
-    {
-        string[] nodeData = text.Split(',');
+		List<int> connections = new();
 
-        int index = int.Parse(nodeData[0]);
-        float posX = float.Parse(nodeData[1]);
-        float posY = float.Parse(nodeData[2]);
-        float posZ = float.Parse(nodeData[3]);
+		for (int i = 4; i < nodeData.Length; i++)
+		{
+			connections.Add(int.Parse(nodeData[i]));
+		}
 
-        List<int> connections = new List<int>();
-
-        for (int i = 4; i < nodeData.Length; i++)
-        {
-            connections.Add(int.Parse(nodeData[i]));
-        }
-
-        return new Node(index, new Vector3(posX, posY, posZ), connections);
-    }
+		return new Node(index, new Vector3(posX, posY, posZ), connections);
+	}
 }

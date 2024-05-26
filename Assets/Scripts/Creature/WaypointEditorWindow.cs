@@ -5,257 +5,252 @@ using UnityEngine;
 
 public class WaypointEditorWindow : EditorWindow
 {
-    [MenuItem("Tools/Waypoint Window")]
-    public static void Open()
-    {
-        GetWindow<WaypointEditorWindow>();
-    }
+	#region Unity
 
-    public Transform waypointRoot;
+	[MenuItem("Tools/Waypoint Window")]
+	public static void Open()
+	{
+		GetWindow<WaypointEditorWindow>();
+	}
 
-    private void OnGUI()
-    {
-        SerializedObject obj = new SerializedObject(this);
+	public Transform waypointRoot;
 
-        EditorGUILayout.PropertyField(obj.FindProperty("waypointRoot"));
+	private void OnGUI()
+	{
+		SerializedObject obj = new(this);
 
-        if (waypointRoot == null)
-        {
-            EditorGUILayout.HelpBox("No root transform selected!", MessageType.Warning);
-        }
-        else
-        {
-            DrawDivider();
+		EditorGUILayout.PropertyField(obj.FindProperty("waypointRoot"));
 
-            DrawHeader("Waypoint Controls");
+		if (waypointRoot == null)
+		{
+			EditorGUILayout.HelpBox("No root transform selected!", MessageType.Warning);
+		}
+		else
+		{
+			DrawDivider();
 
-            EditorGUILayout.BeginVertical();
-            DrawWaypointControls();
-            EditorGUILayout.EndVertical();
+			DrawHeader("Waypoint Controls");
 
-            DrawDivider();
+			EditorGUILayout.BeginVertical();
+			DrawWaypointControls();
+			EditorGUILayout.EndVertical();
 
-            DrawHeader("Graph Controls");
+			DrawDivider();
 
-            EditorGUILayout.BeginVertical();
-            DrawGraphControls();
-            EditorGUILayout.EndVertical();
-        }
+			DrawHeader("Graph Controls");
 
-        obj.ApplyModifiedProperties();
-    }
+			EditorGUILayout.BeginVertical();
+			DrawGraphControls();
+			EditorGUILayout.EndVertical();
+		}
 
-    private void DrawWaypointControls()
-    {
-        if (GUILayout.Button("Create Waypoint"))
-        {
-            GameObject waypointObj = CreateWaypoint();
-            Selection.activeGameObject = waypointObj;
-        }
+		obj.ApplyModifiedProperties();
+	}
 
-        if (GUILayout.Button("Delete Waypoints"))
-        {
-            DeleteWaypoints();
-        }
+	#endregion
 
-        if (GUILayout.Button("Link Waypoints"))
-        {
-            LinkWaypoints();
-        }
+	#region Waypoint Controls
 
-        if (GUILayout.Button("Unlink Waypoints"))
-        {
-            UnlinkWaypoints();
-        }
-    }
+	private void DrawWaypointControls()
+	{
+		if (GUILayout.Button("Create Waypoint"))
+		{
+			GameObject waypointObj = CreateWaypoint();
+			Selection.activeGameObject = waypointObj;
+		}
 
-    private void DrawGraphControls()
-    {
-        if (GUILayout.Button("Save Graph"))
-        {
-            string savePath = EditorUtility.SaveFilePanelInProject("Save graph", "Graph.txt", "txt", "Select location and name to save graph");
+		if (GUILayout.Button("Delete Waypoints"))
+			DeleteWaypoints();
 
-            if (savePath != null)
-            {
-                SaveGraph(savePath);
-            }
-        }
+		if (GUILayout.Button("Link Waypoints"))
+			LinkWaypoints();
 
-        if (GUILayout.Button("Load Graph"))
-        {
-            string[] filters = { "Asset Files", "asset" };
-            string graphPath = EditorUtility.OpenFilePanel("Select graph text file", "Assets", "txt");
+		if (GUILayout.Button("Unlink Waypoints"))
+			UnlinkWaypoints();
+	}
 
-            if (graphPath != null)
-            {
-                GraphModel selectedGraph = GraphData.LoadGraph(graphPath);
+	private GameObject CreateWaypoint(Vector3 position = new Vector3())
+	{
+		GameObject waypointObj = new("Waypoint " + waypointRoot.childCount, typeof(Waypoint));
+		waypointObj.transform.SetParent(waypointRoot);
+		waypointObj.transform.localPosition = position;
 
-                if (selectedGraph != null)
-                {
-                    LoadGraph(selectedGraph);
-                }
-            }
-        }
+		return waypointObj;
+	}
 
-        if (GUILayout.Button("Delete Graph"))
-        {
-            DeleteGraph();
-        }
-    }
+	private void DeleteWaypoints()
+	{
+		Waypoint[] waypoints = GetSelectedWaypoints();
 
-    private static void DrawDivider(int thickness = 1, int padding = 30)
-    {
-        Rect r = EditorGUILayout.GetControlRect(GUILayout.Height(padding + thickness));
-        r.height = thickness;
-        r.y += padding / 2;
-        r.x -= 2;
-        r.width += 6;
-        EditorGUI.DrawRect(r, Color.grey);
-    }
+		foreach (Waypoint waypoint in waypoints)
+		{
+			foreach (Waypoint connection in waypoint.Connections)
+			{
+				connection.RemoveConnection(waypoint);
+			}
 
-    private static void DrawHeader(string text)
-    {
-        GUIStyle style = EditorStyles.largeLabel;
-        style.fontStyle = FontStyle.Bold;
+			DestroyImmediate(waypoint.gameObject);
+		}
+	}
 
-        DrawLabel(text, style);
-    }
+	private void LinkWaypoints()
+	{
+		Waypoint[] waypoints = GetSelectedWaypoints();
 
-    private static void DrawLabel(string text, GUIStyle style, int rectHeight = -1)
-    {
-        Vector2 size = style.CalcSize(new GUIContent(text));
-        Rect r = EditorGUILayout.GetControlRect(GUILayout.Height(size.y * 2));
+		for (int i = 0; i < waypoints.Length; i++)
+		{
+			for (int j = 0; j < waypoints.Length; j++)
+			{
+				if (i != j)
+					waypoints[i].AddConnection(waypoints[j]);
+			}
+		}
+	}
 
-        EditorGUI.LabelField(r, text, style);
-    }
+	private void UnlinkWaypoints()
+	{
+		Waypoint[] waypoints = GetSelectedWaypoints();
 
-    private GameObject CreateWaypoint(Vector3 position = new Vector3())
-    {
-        GameObject waypointObj = new GameObject("Waypoint " + waypointRoot.childCount, typeof(Waypoint));
-        waypointObj.transform.SetParent(waypointRoot);
-        waypointObj.transform.localPosition = position;
+		for (int i = 0; i < waypoints.Length; i++)
+		{
+			for (int j = 0; j < waypoints.Length; j++)
+			{
+				if (i != j)
+					waypoints[i].RemoveConnection(waypoints[j]);
+			}
+		}
+	}
 
-        return waypointObj;
-    }
+	private Waypoint[] GetSelectedWaypoints()
+	{
+		List<Waypoint> waypoints = new();
 
-    private void DeleteWaypoints()
-    {
-        Waypoint[] waypoints = GetSelectedWaypoints();
+		foreach (GameObject obj in Selection.gameObjects)
+		{
+			if (obj.TryGetComponent<Waypoint>(out Waypoint waypoint))
+				waypoints.Add(waypoint);
+		}
 
-        foreach (Waypoint waypoint in waypoints)
-        {
-            foreach (Waypoint connection in waypoint.Connections)
-            {
-                connection.RemoveConnection(waypoint);
-            }
+		return waypoints.ToArray();
+	}
 
-            DestroyImmediate(waypoint.gameObject);
-        }
-    }
+	#endregion
 
-    private void LinkWaypoints()
-    {
-        Waypoint[] waypoints = GetSelectedWaypoints();
+	#region Graph Controls
 
-        for (int i = 0; i < waypoints.Length; i++)
-        {
-            for (int j = 0; j < waypoints.Length; j++)
-            {
-                if (i != j)
-                {
-                    waypoints[i].AddConnection(waypoints[j]);
-                }
-            }
-        }
-    }
+	private void DrawGraphControls()
+	{
+		if (GUILayout.Button("Save Graph"))
+		{
+			string savePath = EditorUtility.SaveFilePanelInProject("Save graph", "Graph.txt", "txt", "Select location and name to save graph");
 
-    private void UnlinkWaypoints()
-    {
-        Waypoint[] waypoints = GetSelectedWaypoints();
+			if (savePath != null)
+				SaveGraph(savePath);
+		}
 
-        for (int i = 0; i < waypoints.Length; i++)
-        {
-            for (int j = 0; j < waypoints.Length; j++)
-            {
-                if (i != j)
-                {
-                    waypoints[i].RemoveConnection(waypoints[j]);
-                }
-            }
-        }
-    }
+		if (GUILayout.Button("Load Graph"))
+		{
+			string graphPath = EditorUtility.OpenFilePanel("Select graph text file", "Assets", "txt");
 
-    private void SaveGraph(string savePath)
-    {
-        Waypoint[] waypoints = waypointRoot.GetComponentsInChildren<Waypoint>();
-        Node[] nodes = new Node[waypoints.Length];
+			if (graphPath != null)
+			{
+				GraphModel selectedGraph = GraphData.LoadGraph(graphPath);
 
-        for (int i = 0; i < waypoints.Length; i++)
-        {
-            nodes[i] = new Node(i, waypoints[i]);
-        }
+				if (selectedGraph != null)
+					LoadGraph(selectedGraph);
+			}
+		}
 
-        for (int i = 0; i < waypoints.Length; i++)
-        {
-            Waypoint waypoint = waypoints[i];
+		if (GUILayout.Button("Delete Graph"))
+			DeleteGraph();
+	}
 
-            for (int j = 0; j < waypoint.Connections.Count; j++)
-            {
-                int connectionIndex = Array.IndexOf(waypoints, waypoint.Connections[j]);
-                nodes[i].ConnectionIndexes.Add(connectionIndex);
-            }
-        }
+	private void SaveGraph(string savePath)
+	{
+		Waypoint[] waypoints = waypointRoot.GetComponentsInChildren<Waypoint>();
+		Node[] nodes = new Node[waypoints.Length];
 
-        GraphData.SaveGraph(nodes, savePath);
-    }
+		for (int i = 0; i < waypoints.Length; i++)
+		{
+			nodes[i] = new Node(i, waypoints[i]);
+		}
 
-    private void LoadGraph(GraphModel graph)
-    {
-        DeleteGraph();
+		for (int i = 0; i < waypoints.Length; i++)
+		{
+			Waypoint waypoint = waypoints[i];
 
-        Waypoint[] waypoints = new Waypoint[graph.Nodes.Length];
+			for (int j = 0; j < waypoint.Connections.Count; j++)
+			{
+				int connectionIndex = Array.IndexOf(waypoints, waypoint.Connections[j]);
+				nodes[i].ConnectionIndexes.Add(connectionIndex);
+			}
+		}
 
-        for (int i = 0; i < graph.Nodes.Length; i++)
-        {
-            waypoints[i] = CreateWaypoint(graph.Nodes[i].Position).GetComponent<Waypoint>();
-        }
+		GraphData.SaveGraph(nodes, savePath);
+	}
 
-        for (int i = 0; i < graph.Nodes.Length; i++)
-        {
-            Node node = graph.Nodes[i];
-            Waypoint nodeWaypoint = waypoints[i];
+	private void LoadGraph(GraphModel graph)
+	{
+		DeleteGraph();
 
-            for (int j = 0; j < node.ConnectionIndexes.Count; j++)
-            {
-                nodeWaypoint.AddConnection(waypoints[node.ConnectionIndexes[j]]);
-            }
-        }
-    }
+		Waypoint[] waypoints = new Waypoint[graph.Nodes.Length];
 
-    private void DeleteGraph()
-    {
-        Waypoint[] waypoints = waypointRoot.GetComponentsInChildren<Waypoint>();
+		for (int i = 0; i < graph.Nodes.Length; i++)
+		{
+			waypoints[i] = CreateWaypoint(graph.Nodes[i].Position).GetComponent<Waypoint>();
+		}
 
-        for (int i = 0; i < waypoints.Length; i++)
-        {
-            DestroyImmediate(waypoints[i].gameObject);
-        }
-    }
+		for (int i = 0; i < graph.Nodes.Length; i++)
+		{
+			Node node = graph.Nodes[i];
+			Waypoint nodeWaypoint = waypoints[i];
 
-    private Waypoint[] GetSelectedWaypoints()
-    {
-        List<Waypoint> waypoints = new List<Waypoint>();
+			for (int j = 0; j < node.ConnectionIndexes.Count; j++)
+			{
+				nodeWaypoint.AddConnection(waypoints[node.ConnectionIndexes[j]]);
+			}
+		}
+	}
 
-        foreach (GameObject obj in Selection.gameObjects)
-        {
-            Waypoint waypoint = obj.GetComponent<Waypoint>();
+	private void DeleteGraph()
+	{
+		Waypoint[] waypoints = waypointRoot.GetComponentsInChildren<Waypoint>();
 
-            if (waypoint != null)
-            {
-                waypoints.Add(waypoint);
-            }
-        }
+		for (int i = 0; i < waypoints.Length; i++)
+		{
+			DestroyImmediate(waypoints[i].gameObject);
+		}
+	}
 
-        return waypoints.ToArray();
-    }
+	#endregion
+
+	#region Helper methods
+
+	private static void DrawDivider(int thickness = 1, int padding = 30)
+	{
+		Rect r = EditorGUILayout.GetControlRect(GUILayout.Height(padding + thickness));
+		r.height = thickness;
+		r.y += padding / 2;
+		r.x -= 2;
+		r.width += 6;
+		EditorGUI.DrawRect(r, Color.grey);
+	}
+
+	private static void DrawHeader(string text)
+	{
+		GUIStyle style = EditorStyles.largeLabel;
+		style.fontStyle = FontStyle.Bold;
+
+		DrawLabel(text, style);
+	}
+
+	private static void DrawLabel(string text, GUIStyle style)
+	{
+		Vector2 size = style.CalcSize(new GUIContent(text));
+		Rect r = EditorGUILayout.GetControlRect(GUILayout.Height(size.y * 2));
+
+		EditorGUI.LabelField(r, text, style);
+	}
+
+	#endregion
 }

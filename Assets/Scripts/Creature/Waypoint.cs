@@ -3,18 +3,18 @@ using UnityEngine;
 
 public class Waypoint : MonoBehaviour
 {
-    public List<Waypoint> Connections = new List<Waypoint>();
+	public List<Waypoint> Connections = new();
 
-    public void AddConnection(Waypoint connection)
-    {
-        if (!Connections.Contains(connection) && connection != this)
-        {
-            Connections.Add(connection);
-        }
-    }
+	public void AddConnection(Waypoint connection)
+	{
+		if (!Connections.Contains(connection) && connection != this)
+		{
+			Connections.Add(connection);
+		}
+	}
 
-    public void RemoveConnection(Waypoint connection)
-    {
-        Connections.Remove(connection);
-    }
+	public void RemoveConnection(Waypoint connection)
+	{
+		Connections.Remove(connection);
+	}
 }

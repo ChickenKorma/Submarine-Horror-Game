@@ -1,29 +1,27 @@
-using System.Collections;
-using System.Collections.Generic;
 using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
 
 public class UIManager : MonoBehaviour
 {
-    [SerializeField] private Color red;
-    [SerializeField] private Color green;
+	[SerializeField] private Color m_red;
+	[SerializeField] private Color m_green;
 
-    [SerializeField] private Image pingIndicatorPanel;
+	[SerializeField] private Image m_pingIndicatorPanel;
 
-    [SerializeField] private TMP_Text pingIndicatorText;
+	[SerializeField] private TMP_Text m_pingIndicatorText;
 
-    void Update()
-    {
-        if (Sonar.Instance.PingEnabled)
-        {
-            pingIndicatorPanel.color = red;
-            pingIndicatorText.text = "Pinging";
-        }
-        else
-        {
-            pingIndicatorPanel.color = green;
-            pingIndicatorText.text = "Ping available";
-        }
-    }
+	void Update()
+	{
+		if (Sonar.Instance.PingEnabled)
+		{
+			m_pingIndicatorPanel.color = m_red;
+			m_pingIndicatorText.text = "Pinging";
+		}
+		else
+		{
+			m_pingIndicatorPanel.color = m_green;
+			m_pingIndicatorText.text = "Ping available";
+		}
+	}
 }
