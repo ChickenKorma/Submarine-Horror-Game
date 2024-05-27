@@ -20,20 +20,23 @@ public class UIManager : MonoBehaviour
 
 	[SerializeField] private TMP_Text m_pingIndicatorText;
 
+	// Motion indicator
 	[SerializeField] private Transform m_creatureTransform;
 	[SerializeField] private Transform m_playerTransform;
+	[SerializeField] private Transform m_exitTransform;
 
-	// Motion indicator
 	[SerializeField] private RectTransform m_motionIndicatorTransform;
 	private Animator m_motionIndicatorAnimator;
 
 	[SerializeField] private float m_maxCreatureDistance;
 	[SerializeField] private float m_maxIndicatorScreenDistance;
 
-	private bool m_isHunting;
-
 	[SerializeField] private float m_wanderingFlashSpeed;
 	[SerializeField] private float m_huntingFlashSpeed;
+
+	[SerializeField] private RectTransform m_exitIndicatorTransform;
+
+	private bool m_isHunting;
 
 	private float m_motionIndicatorFlashSpeed;
 
@@ -61,6 +64,7 @@ public class UIManager : MonoBehaviour
 	private void Update()
 	{
 		UpdateSonarIndicator();
+		UpdateExitIndicator();
 	}
 
 	private void OnEnable()
@@ -147,6 +151,14 @@ public class UIManager : MonoBehaviour
 	}
 
 	private void OnHuntingStateChanged(bool isHunting) => m_isHunting = isHunting;
+
+	private void UpdateExitIndicator()
+	{
+		Vector3 directionToExit = m_playerTransform.worldToLocalMatrix.MultiplyPoint(m_exitTransform.position).normalized;
+
+		Vector3 currentEulerAngles = m_exitIndicatorTransform.rotation.eulerAngles;
+		m_exitIndicatorTransform.rotation = Quaternion.Euler(currentEulerAngles.x, currentEulerAngles.y, (Mathf.Rad2Deg * Mathf.Atan2(directionToExit.z, directionToExit.x)) - 90f);
+	}
 
 	#endregion
 }
