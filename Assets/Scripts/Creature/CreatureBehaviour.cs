@@ -61,13 +61,9 @@ public class CreatureBehaviour : MonoBehaviour
 	private void Awake()
 	{
 		if (Instance != null)
-		{
 			Destroy(this);
-		}
 		else
-		{
 			Instance = this;
-		}
 	}
 
 	private void Start()
