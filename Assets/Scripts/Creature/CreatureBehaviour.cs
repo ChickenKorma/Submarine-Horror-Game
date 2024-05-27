@@ -22,7 +22,21 @@ public class CreatureBehaviour : MonoBehaviour
 
 	[SerializeField] private float m_nodePositionTolerance;
 
-	private bool m_hunting;
+	public Action<bool> HuntingStateChanged = delegate { };
+	private bool m_isHunting;
+
+	public bool IsHunting
+	{
+		get => m_isHunting;
+		private set
+		{
+			if (m_isHunting != value)
+			{
+				m_isHunting = value;
+				HuntingStateChanged.Invoke(value);
+			}
+		}
+	}
 
 	private List<SoundLog> m_soundBuffer;
 	private float m_totalVolume;
@@ -72,7 +86,7 @@ public class CreatureBehaviour : MonoBehaviour
 
 	private void Move()
 	{
-		if (m_hunting = m_totalVolume > m_volumeMaxThreshold || (m_hunting && m_totalVolume > m_volumeMinThreshold))
+		if (IsHunting = m_totalVolume > m_volumeMaxThreshold || (IsHunting && m_totalVolume > m_volumeMinThreshold))
 		{
 			if (m_currentPath.Count > 0 && m_currentPath[^1].Position.Equals(m_averageSoundNode.Position))
 			{
