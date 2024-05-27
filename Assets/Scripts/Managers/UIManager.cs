@@ -9,6 +9,8 @@ public class UIManager : MonoBehaviour
 
 	private bool m_inGame = true;
 
+	[SerializeField] private GameObject m_gameOverScreen;
+
 	// Sonar
 	[SerializeField] private Color m_red;
 	[SerializeField] private Color m_green;
@@ -42,6 +44,8 @@ public class UIManager : MonoBehaviour
 
 	private void Awake()
 	{
+		m_gameOverScreen.SetActive(false);
+
 		m_motionIndicatorAnimator = m_motionIndicatorTransform.GetComponent<Animator>();
 	}
 
@@ -59,12 +63,25 @@ public class UIManager : MonoBehaviour
 
 	private void OnEnable()
 	{
+		CreatureBehaviour.Instance.AttackedPlayer += GameOver;
 		CreatureBehaviour.Instance.HuntingStateChanged += OnHuntingStateChanged;
 	}
 
 	private void OnDisable()
 	{
+		CreatureBehaviour.Instance.AttackedPlayer -= GameOver;
 		CreatureBehaviour.Instance.HuntingStateChanged -= OnHuntingStateChanged;
+	}
+
+	#endregion
+
+	#region Game States
+
+	private void GameOver()
+	{
+		m_inGame = false;
+		m_gameOverScreen.SetActive(true);
+		Time.timeScale = 0;
 	}
 
 	#endregion

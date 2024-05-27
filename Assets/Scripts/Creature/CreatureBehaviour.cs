@@ -22,8 +22,15 @@ public class CreatureBehaviour : MonoBehaviour
 
 	[SerializeField] private float m_nodePositionTolerance;
 
+	[SerializeField] private Transform m_playerTransform;
+
+	[SerializeField] private float m_attackDistance;
+	private float m_attackDistanceSquared;
+
 	public Action<bool> HuntingStateChanged = delegate { };
 	private bool m_isHunting;
+
+	public Action AttackedPlayer = delegate { };
 
 	public bool IsHunting
 	{
@@ -72,7 +79,9 @@ public class CreatureBehaviour : MonoBehaviour
 
 		m_soundBuffer = new List<SoundLog>();
 
-		m_currentNode = m_navigationGraph[0];
+		m_currentNode = m_navigationGraph[14];
+
+		m_attackDistanceSquared = m_attackDistance * m_attackDistance;
 	}
 
 	private void Update()
@@ -125,6 +134,11 @@ public class CreatureBehaviour : MonoBehaviour
 			transform.position = m_currentNode.Position;
 		else
 			transform.position = m_currentNode.Position + ((m_targetNode.Position - m_currentNode.Position) * (m_currentTravelDistance / m_targetNodeDistance));
+
+		Vector3 directionToPlayer = m_playerTransform.position - transform.position;
+
+		if (Vector3.SqrMagnitude(directionToPlayer) <= m_attackDistanceSquared && Physics.Raycast(new Ray(transform.position, directionToPlayer), out RaycastHit hit) && hit.collider.CompareTag("Player"))
+			AttackedPlayer.Invoke();
 
 		if (m_currentTravelDistance >= m_targetNodeDistance)
 		{
