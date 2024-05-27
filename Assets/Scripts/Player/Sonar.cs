@@ -15,6 +15,11 @@ public class Sonar : MonoBehaviour
 	[SerializeField] private float m_pingHold;
 	[SerializeField] private float m_pingSoundDuration;
 
+	private Transform m_creatureTransform;
+	[SerializeField] private GameObject m_creaturePrefab;
+
+	private GameObject m_lastCreatureModel;
+
 	private Vector3 m_pingOrigin;
 	private float m_pingDistance;
 
@@ -42,6 +47,8 @@ public class Sonar : MonoBehaviour
 
 	private void Start()
 	{
+		m_creatureTransform = CreatureBehaviour.Instance.transform;
+
 		m_material.SetFloat("_PingMaxDistance", m_pingMaxDistance);
 		m_material.SetFloat("_PingDistance", m_pingMaxDistance);
 	}
@@ -51,7 +58,10 @@ public class Sonar : MonoBehaviour
 		if (m_pingEnabled)
 		{
 			if (m_pingDistance > m_pingMaxDistance)
+			{
 				m_pingEnabled = false;
+				Destroy(m_lastCreatureModel);
+			}
 			else
 			{
 				m_pingDistance += m_pingSpeed * Time.deltaTime;
@@ -80,6 +90,10 @@ public class Sonar : MonoBehaviour
 			m_pingEnabled = true;
 
 			CreatureBehaviour.Instance.AddSound(m_pingOrigin, 1, m_pingSoundDuration);
+
+			Vector3 creatureModelPosition = m_creaturePrefab.transform.position + m_creatureTransform.position;
+			Quaternion creatureModelRotation = m_creatureTransform.rotation * m_creaturePrefab.transform.rotation;
+			m_lastCreatureModel = Instantiate(m_creaturePrefab, creatureModelPosition, creatureModelRotation);
 		}
 		else
 			m_lastPing = Time.time;

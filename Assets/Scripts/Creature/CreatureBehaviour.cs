@@ -129,7 +129,10 @@ public class CreatureBehaviour : MonoBehaviour
 		if (m_targetNode == null)
 			transform.position = m_currentNode.Position;
 		else
+		{
 			transform.position = m_currentNode.Position + ((m_targetNode.Position - m_currentNode.Position) * (m_currentTravelDistance / m_targetNodeDistance));
+			transform.LookAt(m_targetNode.Position);
+		}
 
 		Vector3 directionToPlayer = m_playerTransform.position - transform.position;
 
