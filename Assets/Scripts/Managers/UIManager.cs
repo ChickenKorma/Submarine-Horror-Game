@@ -63,7 +63,6 @@ public class UIManager : MonoBehaviour
 
 	private void Update()
 	{
-		UpdateSonarIndicator();
 		UpdateExitIndicator();
 	}
 
@@ -73,6 +72,8 @@ public class UIManager : MonoBehaviour
 
 		CreatureBehaviour.Instance.AttackedPlayer += GameOver;
 		CreatureBehaviour.Instance.HuntingStateChanged += OnHuntingStateChanged;
+
+		Sonar.Instance.PingStateChanged += UpdateSonarIndicator;
 	}
 
 	private void OnDisable()
@@ -81,6 +82,8 @@ public class UIManager : MonoBehaviour
 
 		CreatureBehaviour.Instance.AttackedPlayer -= GameOver;
 		CreatureBehaviour.Instance.HuntingStateChanged -= OnHuntingStateChanged;
+
+		Sonar.Instance.PingStateChanged -= UpdateSonarIndicator;
 	}
 
 	#endregion
@@ -105,9 +108,9 @@ public class UIManager : MonoBehaviour
 
 	#region Sonar
 
-	private void UpdateSonarIndicator()
+	private void UpdateSonarIndicator(bool pingEnabled)
 	{
-		if (Sonar.Instance.PingEnabled)
+		if (pingEnabled)
 		{
 			m_pingIndicatorPanel.color = m_red;
 			m_pingIndicatorText.text = "Pinging";
