@@ -42,12 +42,13 @@ public class Ping : MonoBehaviour
 		m_material.SetFloat(m_distancePropertyName, m_distance);
 
 		if (m_distance > m_maxDistance)
-		{
-			m_material.SetInt(m_enabledPropertyName, 0);
-
-			Destroy(m_creatureModel);
 			Destroy(gameObject);
-		}
+	}
+
+	private void OnDestroy()
+	{
+		m_material.SetInt(m_enabledPropertyName, 0);
+		Destroy(m_creatureModel);
 	}
 
 	#endregion
@@ -74,10 +75,10 @@ public class Ping : MonoBehaviour
 
 		CreatureBehaviour.Instance.AddSound(transform.position, 1, m_soundDuration);
 
-		Vector3 creatureModelPosition = m_creaturePrefab.transform.position + m_creatureTransform.position;
+		Vector3 creatureModelPosition = m_creatureTransform.position;
 		Quaternion creatureModelRotation = m_creatureTransform.rotation * m_creaturePrefab.transform.rotation;
 
-		m_creatureModel = Instantiate(m_creaturePrefab, creatureModelPosition, creatureModelRotation);
+		//m_creatureModel = Instantiate(m_creaturePrefab, creatureModelPosition, creatureModelRotation);
 
 		m_isSetup = true;
 	}

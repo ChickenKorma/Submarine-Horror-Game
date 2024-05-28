@@ -24,6 +24,8 @@ public class CreatureBehaviour : MonoBehaviour
 
 	[SerializeField] private Transform m_playerTransform;
 
+	public Transform BeaconTransform { get; set; }
+
 	[SerializeField] private float m_attackDistance;
 	private float m_attackDistanceSquared;
 
@@ -126,24 +128,35 @@ public class CreatureBehaviour : MonoBehaviour
 
 		m_currentTravelDistance += m_travelSpeed * Time.deltaTime;
 
-		if (m_targetNode == null)
-			transform.position = m_currentNode.Position;
-		else
-		{
-			transform.position = m_currentNode.Position + ((m_targetNode.Position - m_currentNode.Position) * (m_currentTravelDistance / m_targetNodeDistance));
-			transform.LookAt(m_targetNode.Position);
-		}
-
-		Vector3 directionToPlayer = m_playerTransform.position - transform.position;
-
-		if (Vector3.SqrMagnitude(directionToPlayer) <= m_attackDistanceSquared && Physics.Raycast(new Ray(transform.position, directionToPlayer), out RaycastHit hit) && hit.collider.CompareTag("Player"))
-			AttackedPlayer.Invoke();
-
 		if (m_currentTravelDistance >= m_targetNodeDistance)
 		{
 			m_currentNode = m_targetNode;
 			m_targetNode = null;
 			m_currentTravelDistance = 0;
+		}
+
+		if (m_targetNode == null)
+			transform.position = m_currentNode.Position;
+		else
+		{
+			transform.position = m_currentNode.Position + ((m_targetNode.Position - m_currentNode.Position) * (float)(m_currentTravelDistance / m_targetNodeDistance));
+			transform.LookAt(m_targetNode.Position);
+		}
+
+		Vector3 directionToPlayer = m_playerTransform.position - transform.position;
+
+		if (Vector3.SqrMagnitude(directionToPlayer) <= m_attackDistanceSquared && Physics.Raycast(new Ray(transform.position, directionToPlayer), out RaycastHit playerHit) && playerHit.collider.CompareTag("Player"))
+			AttackedPlayer.Invoke();
+
+		if (BeaconTransform != null)
+		{
+			Vector3 directionToBeacon = BeaconTransform.position - transform.position;
+
+			if (Vector3.SqrMagnitude(directionToBeacon) <= m_attackDistanceSquared && Physics.Raycast(new Ray(transform.position, directionToBeacon), out RaycastHit beaconHit) && beaconHit.collider.CompareTag("Beacon"))
+			{
+				Destroy(BeaconTransform.gameObject);
+				BeaconTransform = null;
+			}
 		}
 	}
 

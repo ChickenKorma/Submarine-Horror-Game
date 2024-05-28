@@ -18,6 +18,11 @@ public class Beacon : MonoBehaviour
 
 	#region Unity
 
+	private void Start()
+	{
+		CreatureBehaviour.Instance.BeaconTransform = transform;
+	}
+
 	void Update()
 	{
 		if (!m_pingEnabled || (m_pingEnabled && m_lastPing == null))
@@ -28,6 +33,8 @@ public class Beacon : MonoBehaviour
 			m_lastPing.Setup("Beacon", m_pingSpeed, m_pingMaxDistance, m_pingSoundDuration);
 		}
 	}
+
+	private void OnDestroy() => Destroy(m_lastPing);
 
 	#endregion
 }

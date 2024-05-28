@@ -45,4 +45,4 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   m_material: {fileID: 2100000, guid: c73e7603555e16b4f9e0bafbca9c8ff8, type: 2}
-  m_creaturePrefab: {fileID: 919132149155446097, guid: cdb4df13d055df940af0456da34315bc, type: 3}
+  m_creaturePrefab: {fileID: 5803910606985322656, guid: 3f544fb1a54c5274a9cdf3587c0116f2, type: 3}
