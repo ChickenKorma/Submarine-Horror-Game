@@ -27,6 +27,8 @@ public class UIManager : MonoBehaviour
 	[SerializeField] private Transform m_playerTransform;
 	[SerializeField] private Transform m_exitTransform;
 
+	private Vector3 m_creaturePosition;
+
 	[SerializeField] private RectTransform m_creatureIndicatorTransform;
 	[SerializeField] private RectTransform m_beaconIndicatorTransform;
 	private Animator m_creatureIndicatorAnimator;
@@ -72,6 +74,11 @@ public class UIManager : MonoBehaviour
 	private void Update()
 	{
 		UpdateExitIndicator();
+
+		UpdateMotionIndicator(m_creatureIndicatorTransform, m_creaturePosition);
+
+		if (Beacon.Instance != null)
+			UpdateMotionIndicator(m_beaconIndicatorTransform, Beacon.Instance.transform.position);
 	}
 
 	private void OnEnable()
@@ -145,7 +152,9 @@ public class UIManager : MonoBehaviour
 			float creatureIndicatorFlashSpeed = m_isHunting ? m_huntingCreatureFlashSpeed : m_wanderingCreatureFlashSpeed;
 			m_creatureIndicatorAnimator.speed = creatureIndicatorFlashSpeed;
 
-			UpdateMotionIndicator(m_creatureIndicatorTransform, m_creatureTransform, m_creatureIndicatorAnimator);
+			m_creaturePosition = m_creatureTransform.position;
+
+			m_creatureIndicatorAnimator.SetTrigger("Flash");
 
 			yield return new WaitForSeconds(1.05f * (1 / creatureIndicatorFlashSpeed));
 		}
@@ -156,15 +165,15 @@ public class UIManager : MonoBehaviour
 		while (m_inGame)
 		{
 			if (Beacon.Instance != null)
-				UpdateMotionIndicator(m_beaconIndicatorTransform, Beacon.Instance.transform, m_beaconIndicatorAnimator);
+				m_beaconIndicatorAnimator.SetTrigger("Flash");
 
 			yield return new WaitForSeconds(1.05f * (1 / m_beaconFlashSpeed));
 		}
 	}
 
-	private void UpdateMotionIndicator(RectTransform indicatorTransform, Transform targetTransform, Animator animator)
+	private void UpdateMotionIndicator(RectTransform indicatorTransform, Vector3 targetPosition)
 	{
-		Vector3 directionToTarget = m_playerTransform.worldToLocalMatrix.MultiplyPoint(targetTransform.position);
+		Vector3 directionToTarget = m_playerTransform.worldToLocalMatrix.MultiplyPoint(targetPosition);
 
 		float detectorMagnitude = Mathf.Clamp(directionToTarget.magnitude / m_maxIndicatedObjectDistance, 0, 1);
 
@@ -172,8 +181,6 @@ public class UIManager : MonoBehaviour
 		directionToTarget *= detectorMagnitude * m_maxIndicatorScreenDistance;
 
 		indicatorTransform.anchoredPosition = new Vector2(directionToTarget.x, directionToTarget.z) + s_motionIndicatorPositionOffset;
-
-		animator.SetTrigger("Flash");
 	}
 
 	private void OnHuntingStateChanged(bool isHunting) => m_isHunting = isHunting;
