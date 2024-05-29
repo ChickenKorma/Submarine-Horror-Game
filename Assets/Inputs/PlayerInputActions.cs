@@ -46,18 +46,9 @@ public partial class @PlayerInputActions : IInputActionCollection2, IDisposable
                     ""initialStateCheck"": true
                 },
                 {
-                    ""name"": ""Look (Stick)"",
+                    ""name"": ""Look"",
                     ""type"": ""Value"",
                     ""id"": ""2f1d34b7-8ca8-48b3-bf28-5c60bf7e7996"",
-                    ""expectedControlType"": ""Vector2"",
-                    ""processors"": """",
-                    ""interactions"": """",
-                    ""initialStateCheck"": true
-                },
-                {
-                    ""name"": ""Look (Positional)"",
-                    ""type"": ""Value"",
-                    ""id"": ""e76be626-335e-41af-bfab-1da1fc25ee59"",
                     ""expectedControlType"": ""Vector2"",
                     ""processors"": """",
                     ""interactions"": """",
@@ -257,20 +248,64 @@ public partial class @PlayerInputActions : IInputActionCollection2, IDisposable
                     ""interactions"": """",
                     ""processors"": ""StickDeadzone"",
                     ""groups"": ""Gamepad"",
-                    ""action"": ""Look (Stick)"",
+                    ""action"": ""Look"",
                     ""isComposite"": false,
                     ""isPartOfComposite"": false
                 },
                 {
-                    ""name"": """",
-                    ""id"": ""8bd9be81-36e4-46d9-81fb-43909830944b"",
-                    ""path"": ""<Mouse>/position"",
+                    ""name"": ""2D Vector"",
+                    ""id"": ""d55c3dab-a76a-46dd-ae85-3554d026e924"",
+                    ""path"": ""2DVector"",
                     ""interactions"": """",
                     ""processors"": """",
-                    ""groups"": ""KBM"",
-                    ""action"": ""Look (Positional)"",
-                    ""isComposite"": false,
+                    ""groups"": """",
+                    ""action"": ""Look"",
+                    ""isComposite"": true,
                     ""isPartOfComposite"": false
+                },
+                {
+                    ""name"": ""up"",
+                    ""id"": ""3972f6e6-ff34-422d-906c-10e55d1abc09"",
+                    ""path"": ""<Keyboard>/upArrow"",
+                    ""interactions"": """",
+                    ""processors"": """",
+                    ""groups"": """",
+                    ""action"": ""Look"",
+                    ""isComposite"": false,
+                    ""isPartOfComposite"": true
+                },
+                {
+                    ""name"": ""down"",
+                    ""id"": ""b452ce9f-dd35-4004-8164-687f2784bab0"",
+                    ""path"": ""<Keyboard>/downArrow"",
+                    ""interactions"": """",
+                    ""processors"": """",
+                    ""groups"": """",
+                    ""action"": ""Look"",
+                    ""isComposite"": false,
+                    ""isPartOfComposite"": true
+                },
+                {
+                    ""name"": ""left"",
+                    ""id"": ""86c50b9a-e966-48bb-a811-965fb7e7b8da"",
+                    ""path"": ""<Keyboard>/leftArrow"",
+                    ""interactions"": """",
+                    ""processors"": """",
+                    ""groups"": """",
+                    ""action"": ""Look"",
+                    ""isComposite"": false,
+                    ""isPartOfComposite"": true
+                },
+                {
+                    ""name"": ""right"",
+                    ""id"": ""1e17f0dd-e430-4ed2-b424-9f1e30cfea54"",
+                    ""path"": ""<Keyboard>/rightArrow"",
+                    ""interactions"": """",
+                    ""processors"": """",
+                    ""groups"": """",
+                    ""action"": ""Look"",
+                    ""isComposite"": false,
+                    ""isPartOfComposite"": true
                 },
                 {
                     ""name"": """",
@@ -331,8 +366,7 @@ public partial class @PlayerInputActions : IInputActionCollection2, IDisposable
         m_Gameplay = asset.FindActionMap("Gameplay", throwIfNotFound: true);
         m_Gameplay_Ping = m_Gameplay.FindAction("Ping", throwIfNotFound: true);
         m_Gameplay_Movement = m_Gameplay.FindAction("Movement", throwIfNotFound: true);
-        m_Gameplay_LookStick = m_Gameplay.FindAction("Look (Stick)", throwIfNotFound: true);
-        m_Gameplay_LookPositional = m_Gameplay.FindAction("Look (Positional)", throwIfNotFound: true);
+        m_Gameplay_Look = m_Gameplay.FindAction("Look", throwIfNotFound: true);
         m_Gameplay_Beacon = m_Gameplay.FindAction("Beacon", throwIfNotFound: true);
     }
 
@@ -395,8 +429,7 @@ public partial class @PlayerInputActions : IInputActionCollection2, IDisposable
     private IGameplayActions m_GameplayActionsCallbackInterface;
     private readonly InputAction m_Gameplay_Ping;
     private readonly InputAction m_Gameplay_Movement;
-    private readonly InputAction m_Gameplay_LookStick;
-    private readonly InputAction m_Gameplay_LookPositional;
+    private readonly InputAction m_Gameplay_Look;
     private readonly InputAction m_Gameplay_Beacon;
     public struct GameplayActions
     {
@@ -404,8 +437,7 @@ public partial class @PlayerInputActions : IInputActionCollection2, IDisposable
         public GameplayActions(@PlayerInputActions wrapper) { m_Wrapper = wrapper; }
         public InputAction @Ping => m_Wrapper.m_Gameplay_Ping;
         public InputAction @Movement => m_Wrapper.m_Gameplay_Movement;
-        public InputAction @LookStick => m_Wrapper.m_Gameplay_LookStick;
-        public InputAction @LookPositional => m_Wrapper.m_Gameplay_LookPositional;
+        public InputAction @Look => m_Wrapper.m_Gameplay_Look;
         public InputAction @Beacon => m_Wrapper.m_Gameplay_Beacon;
         public InputActionMap Get() { return m_Wrapper.m_Gameplay; }
         public void Enable() { Get().Enable(); }
@@ -422,12 +454,9 @@ public partial class @PlayerInputActions : IInputActionCollection2, IDisposable
                 @Movement.started -= m_Wrapper.m_GameplayActionsCallbackInterface.OnMovement;
                 @Movement.performed -= m_Wrapper.m_GameplayActionsCallbackInterface.OnMovement;
                 @Movement.canceled -= m_Wrapper.m_GameplayActionsCallbackInterface.OnMovement;
-                @LookStick.started -= m_Wrapper.m_GameplayActionsCallbackInterface.OnLookStick;
-                @LookStick.performed -= m_Wrapper.m_GameplayActionsCallbackInterface.OnLookStick;
-                @LookStick.canceled -= m_Wrapper.m_GameplayActionsCallbackInterface.OnLookStick;
-                @LookPositional.started -= m_Wrapper.m_GameplayActionsCallbackInterface.OnLookPositional;
-                @LookPositional.performed -= m_Wrapper.m_GameplayActionsCallbackInterface.OnLookPositional;
-                @LookPositional.canceled -= m_Wrapper.m_GameplayActionsCallbackInterface.OnLookPositional;
+                @Look.started -= m_Wrapper.m_GameplayActionsCallbackInterface.OnLook;
+                @Look.performed -= m_Wrapper.m_GameplayActionsCallbackInterface.OnLook;
+                @Look.canceled -= m_Wrapper.m_GameplayActionsCallbackInterface.OnLook;
                 @Beacon.started -= m_Wrapper.m_GameplayActionsCallbackInterface.OnBeacon;
                 @Beacon.performed -= m_Wrapper.m_GameplayActionsCallbackInterface.OnBeacon;
                 @Beacon.canceled -= m_Wrapper.m_GameplayActionsCallbackInterface.OnBeacon;
@@ -441,12 +470,9 @@ public partial class @PlayerInputActions : IInputActionCollection2, IDisposable
                 @Movement.started += instance.OnMovement;
                 @Movement.performed += instance.OnMovement;
                 @Movement.canceled += instance.OnMovement;
-                @LookStick.started += instance.OnLookStick;
-                @LookStick.performed += instance.OnLookStick;
-                @LookStick.canceled += instance.OnLookStick;
-                @LookPositional.started += instance.OnLookPositional;
-                @LookPositional.performed += instance.OnLookPositional;
-                @LookPositional.canceled += instance.OnLookPositional;
+                @Look.started += instance.OnLook;
+                @Look.performed += instance.OnLook;
+                @Look.canceled += instance.OnLook;
                 @Beacon.started += instance.OnBeacon;
                 @Beacon.performed += instance.OnBeacon;
                 @Beacon.canceled += instance.OnBeacon;
@@ -476,8 +502,7 @@ public partial class @PlayerInputActions : IInputActionCollection2, IDisposable
     {
         void OnPing(InputAction.CallbackContext context);
         void OnMovement(InputAction.CallbackContext context);
-        void OnLookStick(InputAction.CallbackContext context);
-        void OnLookPositional(InputAction.CallbackContext context);
+        void OnLook(InputAction.CallbackContext context);
         void OnBeacon(InputAction.CallbackContext context);
     }
 }

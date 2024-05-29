@@ -21,8 +21,7 @@ public class InputManager : MonoBehaviour
 	public Action<bool> BeaconHoldEvent = delegate { };
 
 	public Action<Vector3> MoveEvent = delegate { };
-	public Action<Vector2> LookStickEvent = delegate { };
-	public Action<Vector2> LookPositionalEvent = delegate { };
+	public Action<Vector2> LookEvent = delegate { };
 
 	private PlayerInputActions m_playerInputActions;
 
@@ -58,13 +57,9 @@ public class InputManager : MonoBehaviour
 		m_playerInputActions.Gameplay.Movement.performed += OnMove;
 		m_playerInputActions.Gameplay.Movement.canceled += OnMove;
 
-		m_playerInputActions.Gameplay.LookStick.started += OnLookStick;
-		m_playerInputActions.Gameplay.LookStick.performed += OnLookStick;
-		m_playerInputActions.Gameplay.LookStick.canceled += OnLookStick;
-
-		m_playerInputActions.Gameplay.LookPositional.started += OnLookPositional;
-		m_playerInputActions.Gameplay.LookPositional.performed += OnLookPositional;
-		m_playerInputActions.Gameplay.LookPositional.canceled += OnLookPositional;
+		m_playerInputActions.Gameplay.Look.started += OnLook;
+		m_playerInputActions.Gameplay.Look.performed += OnLook;
+		m_playerInputActions.Gameplay.Look.canceled += OnLook;
 	}
 
 	private void OnDisable()
@@ -83,13 +78,9 @@ public class InputManager : MonoBehaviour
 		m_playerInputActions.Gameplay.Movement.performed -= OnMove;
 		m_playerInputActions.Gameplay.Movement.canceled -= OnMove;
 
-		m_playerInputActions.Gameplay.LookStick.started -= OnLookStick;
-		m_playerInputActions.Gameplay.LookStick.performed -= OnLookStick;
-		m_playerInputActions.Gameplay.LookStick.canceled -= OnLookStick;
-
-		m_playerInputActions.Gameplay.LookPositional.started -= OnLookPositional;
-		m_playerInputActions.Gameplay.LookPositional.performed -= OnLookPositional;
-		m_playerInputActions.Gameplay.LookPositional.canceled -= OnLookPositional;
+		m_playerInputActions.Gameplay.Look.started -= OnLook;
+		m_playerInputActions.Gameplay.Look.performed -= OnLook;
+		m_playerInputActions.Gameplay.Look.canceled -= OnLook;
 	}
 
 	#endregion
@@ -121,9 +112,7 @@ public class InputManager : MonoBehaviour
 
 	private void OnMove(InputAction.CallbackContext context) => MoveEvent.Invoke(context.ReadValue<Vector3>());
 
-	private void OnLookStick(InputAction.CallbackContext context) => LookStickEvent.Invoke(context.ReadValue<Vector2>());
-
-	private void OnLookPositional(InputAction.CallbackContext context) => LookPositionalEvent.Invoke(context.ReadValue<Vector2>());
+	private void OnLook(InputAction.CallbackContext context) => LookEvent.Invoke(context.ReadValue<Vector2>());
 
 	#endregion
 }

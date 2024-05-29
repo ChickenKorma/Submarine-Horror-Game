@@ -24,18 +24,9 @@
                     "initialStateCheck": true
                 },
                 {
-                    "name": "Look (Stick)",
+                    "name": "Look",
                     "type": "Value",
                     "id": "2f1d34b7-8ca8-48b3-bf28-5c60bf7e7996",
-                    "expectedControlType": "Vector2",
-                    "processors": "",
-                    "interactions": "",
-                    "initialStateCheck": true
-                },
-                {
-                    "name": "Look (Positional)",
-                    "type": "Value",
-                    "id": "e76be626-335e-41af-bfab-1da1fc25ee59",
                     "expectedControlType": "Vector2",
                     "processors": "",
                     "interactions": "",
@@ -235,20 +226,64 @@
                     "interactions": "",
                     "processors": "StickDeadzone",
                     "groups": "Gamepad",
-                    "action": "Look (Stick)",
+                    "action": "Look",
                     "isComposite": false,
                     "isPartOfComposite": false
                 },
                 {
-                    "name": "",
-                    "id": "8bd9be81-36e4-46d9-81fb-43909830944b",
-                    "path": "<Mouse>/position",
+                    "name": "2D Vector",
+                    "id": "d55c3dab-a76a-46dd-ae85-3554d026e924",
+                    "path": "2DVector",
                     "interactions": "",
                     "processors": "",
-                    "groups": "KBM",
-                    "action": "Look (Positional)",
-                    "isComposite": false,
+                    "groups": "",
+                    "action": "Look",
+                    "isComposite": true,
                     "isPartOfComposite": false
+                },
+                {
+                    "name": "up",
+                    "id": "3972f6e6-ff34-422d-906c-10e55d1abc09",
+                    "path": "<Keyboard>/upArrow",
+                    "interactions": "",
+                    "processors": "",
+                    "groups": "",
+                    "action": "Look",
+                    "isComposite": false,
+                    "isPartOfComposite": true
+                },
+                {
+                    "name": "down",
+                    "id": "b452ce9f-dd35-4004-8164-687f2784bab0",
+                    "path": "<Keyboard>/downArrow",
+                    "interactions": "",
+                    "processors": "",
+                    "groups": "",
+                    "action": "Look",
+                    "isComposite": false,
+                    "isPartOfComposite": true
+                },
+                {
+                    "name": "left",
+                    "id": "86c50b9a-e966-48bb-a811-965fb7e7b8da",
+                    "path": "<Keyboard>/leftArrow",
+                    "interactions": "",
+                    "processors": "",
+                    "groups": "",
+                    "action": "Look",
+                    "isComposite": false,
+                    "isPartOfComposite": true
+                },
+                {
+                    "name": "right",
+                    "id": "1e17f0dd-e430-4ed2-b424-9f1e30cfea54",
+                    "path": "<Keyboard>/rightArrow",
+                    "interactions": "",
+                    "processors": "",
+                    "groups": "",
+                    "action": "Look",
+                    "isComposite": false,
+                    "isPartOfComposite": true
                 },
                 {
                     "name": "",
