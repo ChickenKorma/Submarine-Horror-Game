@@ -40,6 +40,15 @@
                     "processors": "",
                     "interactions": "",
                     "initialStateCheck": true
+                },
+                {
+                    "name": "Beacon",
+                    "type": "Button",
+                    "id": "7dbf3672-bb6e-4261-9aa3-3cd92f7c50bc",
+                    "expectedControlType": "Button",
+                    "processors": "",
+                    "interactions": "Holding",
+                    "initialStateCheck": false
                 }
             ],
             "bindings": [
@@ -238,6 +247,28 @@
                     "processors": "",
                     "groups": "KBM",
                     "action": "Look (Positional)",
+                    "isComposite": false,
+                    "isPartOfComposite": false
+                },
+                {
+                    "name": "",
+                    "id": "705f78aa-d053-4c07-9642-b7ddd5791bb2",
+                    "path": "<Gamepad>/buttonWest",
+                    "interactions": "",
+                    "processors": "",
+                    "groups": "Gamepad",
+                    "action": "Beacon",
+                    "isComposite": false,
+                    "isPartOfComposite": false
+                },
+                {
+                    "name": "",
+                    "id": "5bf7b463-4ec8-40cb-bf84-9a9c6430aca0",
+                    "path": "<Keyboard>/e",
+                    "interactions": "Hold",
+                    "processors": "",
+                    "groups": "KBM",
+                    "action": "Beacon",
                     "isComposite": false,
                     "isPartOfComposite": false
                 }

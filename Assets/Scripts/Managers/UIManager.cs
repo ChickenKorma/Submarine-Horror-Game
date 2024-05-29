@@ -17,28 +17,31 @@ public class UIManager : MonoBehaviour
 	[SerializeField] private Color m_green;
 
 	[SerializeField] private Image m_pingIndicatorPanel;
-
 	[SerializeField] private TMP_Text m_pingIndicatorText;
+
+	// Beacon
+	[SerializeField] private Slider m_beaconInputSlider;
 
 	// Motion indicator
 	[SerializeField] private Transform m_creatureTransform;
 	[SerializeField] private Transform m_playerTransform;
 	[SerializeField] private Transform m_exitTransform;
 
-	[SerializeField] private RectTransform m_motionIndicatorTransform;
-	private Animator m_motionIndicatorAnimator;
+	[SerializeField] private RectTransform m_creatureIndicatorTransform;
+	[SerializeField] private RectTransform m_beaconIndicatorTransform;
+	private Animator m_creatureIndicatorAnimator;
+	private Animator m_beaconIndicatorAnimator;
 
-	[SerializeField] private float m_maxCreatureDistance;
+	[SerializeField] private float m_maxIndicatedObjectDistance;
 	[SerializeField] private float m_maxIndicatorScreenDistance;
 
-	[SerializeField] private float m_wanderingFlashSpeed;
-	[SerializeField] private float m_huntingFlashSpeed;
+	[SerializeField] private float m_wanderingCreatureFlashSpeed;
+	[SerializeField] private float m_huntingCreatureFlashSpeed;
+	[SerializeField] private float m_beaconFlashSpeed;
 
 	[SerializeField] private RectTransform m_exitIndicatorTransform;
 
 	private bool m_isHunting;
-
-	private float m_motionIndicatorFlashSpeed;
 
 	private static Vector2 s_motionIndicatorPositionOffset = new(-100, 100);
 
@@ -51,14 +54,19 @@ public class UIManager : MonoBehaviour
 		m_gameOverScreen.SetActive(false);
 		m_gameWonScreen.SetActive(false);
 
-		m_motionIndicatorAnimator = m_motionIndicatorTransform.GetComponent<Animator>();
+		m_creatureIndicatorAnimator = m_creatureIndicatorTransform.GetComponent<Animator>();
+
+		m_beaconIndicatorAnimator = m_beaconIndicatorTransform.GetComponent<Animator>();
+		m_beaconIndicatorAnimator.speed = m_beaconFlashSpeed;
 	}
 
 	private void Start()
 	{
 		OnHuntingStateChanged(false);
+		UpdateBeaconIndicator(0);
 
-		StartCoroutine(FlashMotionIndicator());
+		StartCoroutine(FlashCreatureIndicator());
+		StartCoroutine(FlashBeaconIndicator());
 	}
 
 	private void Update()
@@ -74,6 +82,7 @@ public class UIManager : MonoBehaviour
 		CreatureBehaviour.Instance.HuntingStateChanged += OnHuntingStateChanged;
 
 		Sonar.Instance.PingStateChanged += UpdateSonarIndicator;
+		Sonar.Instance.BeaconInputHold += UpdateBeaconIndicator;
 	}
 
 	private void OnDisable()
@@ -84,6 +93,7 @@ public class UIManager : MonoBehaviour
 		CreatureBehaviour.Instance.HuntingStateChanged -= OnHuntingStateChanged;
 
 		Sonar.Instance.PingStateChanged -= UpdateSonarIndicator;
+		Sonar.Instance.BeaconInputHold -= UpdateBeaconIndicator;
 	}
 
 	#endregion
@@ -122,35 +132,48 @@ public class UIManager : MonoBehaviour
 		}
 	}
 
+	private void UpdateBeaconIndicator(float holdProgress) => m_beaconInputSlider.value = holdProgress;
+
 	#endregion
 
 	#region Motion indicator
 
-	private IEnumerator FlashMotionIndicator()
+	private IEnumerator FlashCreatureIndicator()
 	{
 		while (m_inGame)
 		{
-			m_motionIndicatorFlashSpeed = m_isHunting ? m_huntingFlashSpeed : m_wanderingFlashSpeed;
-			m_motionIndicatorAnimator.speed = m_motionIndicatorFlashSpeed;
+			float creatureIndicatorFlashSpeed = m_isHunting ? m_huntingCreatureFlashSpeed : m_wanderingCreatureFlashSpeed;
+			m_creatureIndicatorAnimator.speed = creatureIndicatorFlashSpeed;
 
-			UpdateMotionIndicator();
+			UpdateMotionIndicator(m_creatureIndicatorTransform, m_creatureTransform, m_creatureIndicatorAnimator);
 
-			yield return new WaitForSeconds(1 / m_motionIndicatorFlashSpeed);
+			yield return new WaitForSeconds(1.05f * (1 / creatureIndicatorFlashSpeed));
 		}
 	}
 
-	private void UpdateMotionIndicator()
+	private IEnumerator FlashBeaconIndicator()
 	{
-		Vector3 directionToCreature = m_playerTransform.worldToLocalMatrix.MultiplyPoint(m_creatureTransform.position);
+		while (m_inGame)
+		{
+			if (Beacon.Instance != null)
+				UpdateMotionIndicator(m_beaconIndicatorTransform, Beacon.Instance.transform, m_beaconIndicatorAnimator);
 
-		float detectorMagnitude = Mathf.Clamp(directionToCreature.magnitude / m_maxCreatureDistance, 0, 1);
+			yield return new WaitForSeconds(1.05f * (1 / m_beaconFlashSpeed));
+		}
+	}
 
-		directionToCreature.Normalize();
-		directionToCreature *= detectorMagnitude * m_maxIndicatorScreenDistance;
+	private void UpdateMotionIndicator(RectTransform indicatorTransform, Transform targetTransform, Animator animator)
+	{
+		Vector3 directionToTarget = m_playerTransform.worldToLocalMatrix.MultiplyPoint(targetTransform.position);
 
-		m_motionIndicatorTransform.anchoredPosition = new Vector2(directionToCreature.x, directionToCreature.z) + s_motionIndicatorPositionOffset;
+		float detectorMagnitude = Mathf.Clamp(directionToTarget.magnitude / m_maxIndicatedObjectDistance, 0, 1);
 
-		m_motionIndicatorAnimator.SetTrigger("Flash");
+		directionToTarget.Normalize();
+		directionToTarget *= detectorMagnitude * m_maxIndicatorScreenDistance;
+
+		indicatorTransform.anchoredPosition = new Vector2(directionToTarget.x, directionToTarget.z) + s_motionIndicatorPositionOffset;
+
+		animator.SetTrigger("Flash");
 	}
 
 	private void OnHuntingStateChanged(bool isHunting) => m_isHunting = isHunting;

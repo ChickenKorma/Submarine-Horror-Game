@@ -62,6 +62,15 @@ public partial class @PlayerInputActions : IInputActionCollection2, IDisposable
                     ""processors"": """",
                     ""interactions"": """",
                     ""initialStateCheck"": true
+                },
+                {
+                    ""name"": ""Beacon"",
+                    ""type"": ""Button"",
+                    ""id"": ""7dbf3672-bb6e-4261-9aa3-3cd92f7c50bc"",
+                    ""expectedControlType"": ""Button"",
+                    ""processors"": """",
+                    ""interactions"": ""Holding"",
+                    ""initialStateCheck"": false
                 }
             ],
             ""bindings"": [
@@ -262,6 +271,28 @@ public partial class @PlayerInputActions : IInputActionCollection2, IDisposable
                     ""action"": ""Look (Positional)"",
                     ""isComposite"": false,
                     ""isPartOfComposite"": false
+                },
+                {
+                    ""name"": """",
+                    ""id"": ""705f78aa-d053-4c07-9642-b7ddd5791bb2"",
+                    ""path"": ""<Gamepad>/buttonWest"",
+                    ""interactions"": """",
+                    ""processors"": """",
+                    ""groups"": ""Gamepad"",
+                    ""action"": ""Beacon"",
+                    ""isComposite"": false,
+                    ""isPartOfComposite"": false
+                },
+                {
+                    ""name"": """",
+                    ""id"": ""5bf7b463-4ec8-40cb-bf84-9a9c6430aca0"",
+                    ""path"": ""<Keyboard>/e"",
+                    ""interactions"": ""Hold"",
+                    ""processors"": """",
+                    ""groups"": ""KBM"",
+                    ""action"": ""Beacon"",
+                    ""isComposite"": false,
+                    ""isPartOfComposite"": false
                 }
             ]
         }
@@ -302,6 +333,7 @@ public partial class @PlayerInputActions : IInputActionCollection2, IDisposable
         m_Gameplay_Movement = m_Gameplay.FindAction("Movement", throwIfNotFound: true);
         m_Gameplay_LookStick = m_Gameplay.FindAction("Look (Stick)", throwIfNotFound: true);
         m_Gameplay_LookPositional = m_Gameplay.FindAction("Look (Positional)", throwIfNotFound: true);
+        m_Gameplay_Beacon = m_Gameplay.FindAction("Beacon", throwIfNotFound: true);
     }
 
     public void Dispose()
@@ -365,6 +397,7 @@ public partial class @PlayerInputActions : IInputActionCollection2, IDisposable
     private readonly InputAction m_Gameplay_Movement;
     private readonly InputAction m_Gameplay_LookStick;
     private readonly InputAction m_Gameplay_LookPositional;
+    private readonly InputAction m_Gameplay_Beacon;
     public struct GameplayActions
     {
         private @PlayerInputActions m_Wrapper;
@@ -373,6 +406,7 @@ public partial class @PlayerInputActions : IInputActionCollection2, IDisposable
         public InputAction @Movement => m_Wrapper.m_Gameplay_Movement;
         public InputAction @LookStick => m_Wrapper.m_Gameplay_LookStick;
         public InputAction @LookPositional => m_Wrapper.m_Gameplay_LookPositional;
+        public InputAction @Beacon => m_Wrapper.m_Gameplay_Beacon;
         public InputActionMap Get() { return m_Wrapper.m_Gameplay; }
         public void Enable() { Get().Enable(); }
         public void Disable() { Get().Disable(); }
@@ -394,6 +428,9 @@ public partial class @PlayerInputActions : IInputActionCollection2, IDisposable
                 @LookPositional.started -= m_Wrapper.m_GameplayActionsCallbackInterface.OnLookPositional;
                 @LookPositional.performed -= m_Wrapper.m_GameplayActionsCallbackInterface.OnLookPositional;
                 @LookPositional.canceled -= m_Wrapper.m_GameplayActionsCallbackInterface.OnLookPositional;
+                @Beacon.started -= m_Wrapper.m_GameplayActionsCallbackInterface.OnBeacon;
+                @Beacon.performed -= m_Wrapper.m_GameplayActionsCallbackInterface.OnBeacon;
+                @Beacon.canceled -= m_Wrapper.m_GameplayActionsCallbackInterface.OnBeacon;
             }
             m_Wrapper.m_GameplayActionsCallbackInterface = instance;
             if (instance != null)
@@ -410,6 +447,9 @@ public partial class @PlayerInputActions : IInputActionCollection2, IDisposable
                 @LookPositional.started += instance.OnLookPositional;
                 @LookPositional.performed += instance.OnLookPositional;
                 @LookPositional.canceled += instance.OnLookPositional;
+                @Beacon.started += instance.OnBeacon;
+                @Beacon.performed += instance.OnBeacon;
+                @Beacon.canceled += instance.OnBeacon;
             }
         }
     }
@@ -438,5 +478,6 @@ public partial class @PlayerInputActions : IInputActionCollection2, IDisposable
         void OnMovement(InputAction.CallbackContext context);
         void OnLookStick(InputAction.CallbackContext context);
         void OnLookPositional(InputAction.CallbackContext context);
+        void OnBeacon(InputAction.CallbackContext context);
     }
 }

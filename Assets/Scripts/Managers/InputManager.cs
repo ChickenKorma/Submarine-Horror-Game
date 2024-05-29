@@ -17,6 +17,9 @@ public class InputManager : MonoBehaviour
 
 	// Gameplay events
 	public Action PingEvent = delegate { };
+
+	public Action<bool> BeaconHoldEvent = delegate { };
+
 	public Action<Vector3> MoveEvent = delegate { };
 	public Action<Vector2> LookStickEvent = delegate { };
 	public Action<Vector2> LookPositionalEvent = delegate { };
@@ -24,6 +27,8 @@ public class InputManager : MonoBehaviour
 	private PlayerInputActions m_playerInputActions;
 
 	#endregion
+
+	#region Unity
 
 	private void Awake()
 	{
@@ -44,6 +49,10 @@ public class InputManager : MonoBehaviour
 
 		// Gameplay actions
 		m_playerInputActions.Gameplay.Ping.performed += OnPing;
+
+		m_playerInputActions.Gameplay.Beacon.started += OnBeaconHold;
+		m_playerInputActions.Gameplay.Beacon.performed += OnBeaconHold;
+		m_playerInputActions.Gameplay.Beacon.canceled += OnBeaconHold;
 
 		m_playerInputActions.Gameplay.Movement.started += OnMove;
 		m_playerInputActions.Gameplay.Movement.performed += OnMove;
@@ -66,6 +75,10 @@ public class InputManager : MonoBehaviour
 		// Gameplay actions
 		m_playerInputActions.Gameplay.Ping.performed -= OnPing;
 
+		m_playerInputActions.Gameplay.Beacon.started -= OnBeaconHold;
+		m_playerInputActions.Gameplay.Beacon.performed -= OnBeaconHold;
+		m_playerInputActions.Gameplay.Beacon.canceled -= OnBeaconHold;
+
 		m_playerInputActions.Gameplay.Movement.started -= OnMove;
 		m_playerInputActions.Gameplay.Movement.performed -= OnMove;
 		m_playerInputActions.Gameplay.Movement.canceled -= OnMove;
@@ -79,6 +92,10 @@ public class InputManager : MonoBehaviour
 		m_playerInputActions.Gameplay.LookPositional.canceled -= OnLookPositional;
 	}
 
+	#endregion
+
+	#region Control Schemes
+
 	private void UpdateControlScheme()
 	{
 		CurrentControlScheme = PlayerInput.currentControlScheme switch
@@ -91,17 +108,24 @@ public class InputManager : MonoBehaviour
 		DeviceChangedEvent.Invoke();
 	}
 
-	// Device management
 	private void OnDeviceChanged(PlayerInput _) => UpdateControlScheme();
 
-	// Gameplay functions
+	#endregion
+
+	#region Controls
+
 	private void OnPing(InputAction.CallbackContext context) => PingEvent.Invoke();
+
+	// Invokes as true when the player starts to hold it, and invokes as false if they release.
+	private void OnBeaconHold(InputAction.CallbackContext context) => BeaconHoldEvent.Invoke(!context.canceled);
 
 	private void OnMove(InputAction.CallbackContext context) => MoveEvent.Invoke(context.ReadValue<Vector3>());
 
 	private void OnLookStick(InputAction.CallbackContext context) => LookStickEvent.Invoke(context.ReadValue<Vector2>());
 
 	private void OnLookPositional(InputAction.CallbackContext context) => LookPositionalEvent.Invoke(context.ReadValue<Vector2>());
+
+	#endregion
 }
 
 public enum ControlScheme
@@ -109,3 +133,4 @@ public enum ControlScheme
 	KeyboardAndMouse,
 	Gamepad
 }
+

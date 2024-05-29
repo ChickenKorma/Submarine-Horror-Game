@@ -8,8 +8,10 @@ public class Sonar : MonoBehaviour
 	public static Sonar Instance { get; private set; }
 
 	public Action<bool> PingStateChanged = delegate { };
+	public Action<float> BeaconInputHold = delegate { };
 
 	[SerializeField] private GameObject m_pingEmitterPrefab;
+	[SerializeField] private GameObject m_beaconPrefab;
 
 	[SerializeField] private float m_pingSpeed;
 	[SerializeField] private float m_pingMaxDistance;
@@ -17,10 +19,16 @@ public class Sonar : MonoBehaviour
 	[SerializeField] private float m_pingSoundDuration;
 
 	private bool m_pingEnabled;
+	private bool m_beaconActive;
+
+	private bool m_beaconInputHeld;
+	[SerializeField] private float m_beaconInputHoldSpeed;
+	private float m_beaconInputHoldProgress;
 
 	private float m_lastPingInput = -10000;
 
 	private Ping m_lastPing;
+	private GameObject m_lastBeacon;
 
 	#endregion
 
@@ -34,9 +42,17 @@ public class Sonar : MonoBehaviour
 			Instance = this;
 	}
 
-	private void OnEnable() => InputManager.Instance.PingEvent += Ping;
+	private void OnEnable()
+	{
+		InputManager.Instance.PingEvent += Ping;
+		InputManager.Instance.BeaconHoldEvent += BeaconInputHeld;
+	}
 
-	private void OnDisable() => InputManager.Instance.PingEvent -= Ping;
+	private void OnDisable()
+	{
+		InputManager.Instance.PingEvent -= Ping;
+		InputManager.Instance.BeaconHoldEvent -= BeaconInputHeld;
+	}
 
 	void Update()
 	{
@@ -47,6 +63,19 @@ public class Sonar : MonoBehaviour
 		}
 		else if (Time.time <= m_lastPingInput + m_pingHold)
 			Ping();
+
+		if (m_lastBeacon == null && m_beaconInputHeld)
+		{
+			m_beaconInputHoldProgress += m_beaconInputHoldSpeed * Time.deltaTime;
+			BeaconInputHold.Invoke(m_beaconInputHoldProgress);
+
+			if (m_beaconInputHoldProgress >= 1)
+			{
+				DropBeacon();
+				m_beaconInputHoldProgress = 0;
+				BeaconInputHold.Invoke(m_beaconInputHoldProgress);
+			}
+		}
 	}
 
 	#endregion
@@ -65,6 +94,21 @@ public class Sonar : MonoBehaviour
 		}
 		else
 			m_lastPingInput = Time.time;
+	}
+
+	private void BeaconInputHeld(bool holding)
+	{
+		if (m_beaconInputHeld != holding)
+		{
+			m_beaconInputHeld = holding;
+			m_beaconInputHoldProgress = 0;
+			BeaconInputHold.Invoke(m_beaconInputHoldProgress);
+		}
+	}
+
+	private void DropBeacon()
+	{
+		m_lastBeacon = Instantiate(m_beaconPrefab, transform.position, Quaternion.identity);
 	}
 
 	#endregion

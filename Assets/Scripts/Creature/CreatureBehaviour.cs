@@ -24,8 +24,6 @@ public class CreatureBehaviour : MonoBehaviour
 
 	[SerializeField] private Transform m_playerTransform;
 
-	public Transform BeaconTransform { get; set; }
-
 	[SerializeField] private float m_attackDistance;
 	private float m_attackDistanceSquared;
 
@@ -148,15 +146,12 @@ public class CreatureBehaviour : MonoBehaviour
 		if (Vector3.SqrMagnitude(directionToPlayer) <= m_attackDistanceSquared && Physics.Raycast(new Ray(transform.position, directionToPlayer), out RaycastHit playerHit) && playerHit.collider.CompareTag("Player"))
 			AttackedPlayer.Invoke();
 
-		if (BeaconTransform != null)
+		if (Beacon.Instance != null)
 		{
-			Vector3 directionToBeacon = BeaconTransform.position - transform.position;
+			Vector3 directionToBeacon = Beacon.Instance.transform.position - transform.position;
 
 			if (Vector3.SqrMagnitude(directionToBeacon) <= m_attackDistanceSquared && Physics.Raycast(new Ray(transform.position, directionToBeacon), out RaycastHit beaconHit) && beaconHit.collider.CompareTag("Beacon"))
-			{
-				Destroy(BeaconTransform.gameObject);
-				BeaconTransform = null;
-			}
+				Destroy(Beacon.Instance.gameObject);
 		}
 	}
 

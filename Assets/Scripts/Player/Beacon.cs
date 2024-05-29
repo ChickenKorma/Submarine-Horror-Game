@@ -4,6 +4,8 @@ public class Beacon : MonoBehaviour
 {
 	#region Variables
 
+	public static Beacon Instance { get; private set; }
+
 	[SerializeField] private GameObject m_pingEmitterPrefab;
 
 	[SerializeField] private float m_pingSpeed;
@@ -18,9 +20,12 @@ public class Beacon : MonoBehaviour
 
 	#region Unity
 
-	private void Start()
+	private void Awake()
 	{
-		CreatureBehaviour.Instance.BeaconTransform = transform;
+		if (Instance != null)
+			Destroy(this);
+		else
+			Instance = this;
 	}
 
 	void Update()

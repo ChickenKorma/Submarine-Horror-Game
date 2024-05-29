@@ -78,7 +78,7 @@ public class Ping : MonoBehaviour
 		Vector3 creatureModelPosition = m_creatureTransform.position;
 		Quaternion creatureModelRotation = m_creatureTransform.rotation * m_creaturePrefab.transform.rotation;
 
-		//m_creatureModel = Instantiate(m_creaturePrefab, creatureModelPosition, creatureModelRotation);
+		m_creatureModel = Instantiate(m_creaturePrefab, creatureModelPosition, creatureModelRotation);
 
 		m_isSetup = true;
 	}
