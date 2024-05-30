@@ -91,6 +91,8 @@ public class Sonar : MonoBehaviour
 
 			m_lastPing = Instantiate(m_pingEmitterPrefab, transform.position, Quaternion.identity).GetComponent<Ping>();
 			m_lastPing.Setup("Player", m_pingSpeed, m_pingMaxDistance, m_pingSoundDuration);
+
+			AudioManager.Instance.PlaySubmarineSonarPing();
 		}
 		else
 			m_lastPingInput = Time.time;
@@ -109,6 +111,8 @@ public class Sonar : MonoBehaviour
 	private void DropBeacon()
 	{
 		m_lastBeacon = Instantiate(m_beaconPrefab, transform.position, Quaternion.identity);
+
+		AudioManager.Instance.PlayBeaconRelease();
 	}
 
 	#endregion

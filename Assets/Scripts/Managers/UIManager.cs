@@ -155,6 +155,7 @@ public class UIManager : MonoBehaviour
 			m_creaturePosition = m_creatureTransform.position;
 
 			m_creatureIndicatorAnimator.SetTrigger("Flash");
+			AudioManager.Instance.PlayMotionDetectorBeep();
 
 			yield return new WaitForSeconds(1.05f * (1 / creatureIndicatorFlashSpeed));
 		}

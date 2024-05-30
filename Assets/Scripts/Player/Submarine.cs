@@ -38,6 +38,9 @@ public class Submarine : MonoBehaviour
 		m_rb.MoveRotation(m_rb.rotation * Quaternion.Euler(m_turnSpeed * Time.fixedDeltaTime * new Vector3(-m_lookInput.y, m_lookInput.x, 0)));
 
 		m_rb.AddRelativeForce(m_movement * m_thrust);
+
+		AudioManager.Instance.SetSubmarineMoving(m_movement.sqrMagnitude > 0.25f);
+		AudioManager.Instance.SetSubmarineRotating(m_lookInput.sqrMagnitude > 0.25f);
 	}
 
 	#endregion

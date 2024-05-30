@@ -22,6 +22,7 @@ public class Ping : MonoBehaviour
 
 	private float m_soundDuration;
 
+	private bool m_isSubmarine;
 	private bool m_isSetup;
 
 	#endregion

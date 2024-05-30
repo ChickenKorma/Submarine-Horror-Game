@@ -144,7 +144,10 @@ public class CreatureBehaviour : MonoBehaviour
 		Vector3 directionToPlayer = m_playerTransform.position - transform.position;
 
 		if (Vector3.SqrMagnitude(directionToPlayer) <= m_attackDistanceSquared && Physics.Raycast(new Ray(transform.position, directionToPlayer), out RaycastHit playerHit) && playerHit.collider.CompareTag("Player"))
+		{
 			AttackedPlayer.Invoke();
+			AudioManager.Instance.MainAudioMixer.SetFloat("MasterVolume", -80);
+		}
 
 		if (Beacon.Instance != null)
 		{

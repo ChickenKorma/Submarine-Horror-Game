@@ -16,6 +16,9 @@ public class Beacon : MonoBehaviour
 
 	private Ping m_lastPing;
 
+	private bool m_pingingStarted;
+	private float m_pingStartTime;
+
 	#endregion
 
 	#region Unity
@@ -28,14 +31,26 @@ public class Beacon : MonoBehaviour
 			Instance = this;
 	}
 
+	private void Start()
+	{
+		AudioManager.Instance.BeaconSonarPingAudioSource = GetComponent<AudioSource>();
+
+		m_pingStartTime = Time.time + 1f;
+	}
+
 	void Update()
 	{
-		if (!m_pingEnabled || (m_pingEnabled && m_lastPing == null))
+		if (!m_pingingStarted && Time.time > m_pingStartTime)
+			m_pingingStarted = true;
+
+		if (m_pingingStarted && (!m_pingEnabled || (m_pingEnabled && m_lastPing == null)))
 		{
 			m_pingEnabled = true;
 
 			m_lastPing = Instantiate(m_pingEmitterPrefab, transform.position, Quaternion.identity).GetComponent<Ping>();
 			m_lastPing.Setup("Beacon", m_pingSpeed, m_pingMaxDistance, m_pingSoundDuration);
+
+			AudioManager.Instance.PlayBeaconSonarPing();
 		}
 	}
 
