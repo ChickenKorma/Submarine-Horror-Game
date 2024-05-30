@@ -7,6 +7,12 @@ public class Submarine : MonoBehaviour
 	[SerializeField] private float m_thrust;
 	[SerializeField] private float m_turnSpeed;
 
+	[SerializeField] private float m_collisionBuffer;
+	private float m_lastCollisionTime;
+
+	[SerializeField] private float m_collisionVolume;
+	[SerializeField] private float m_collisionSoundDuration;
+
 	private Rigidbody m_rb;
 
 	private Vector3 m_movement;
@@ -41,6 +47,19 @@ public class Submarine : MonoBehaviour
 
 		AudioManager.Instance.SetSubmarineMoving(m_movement.sqrMagnitude > 0.25f);
 		AudioManager.Instance.SetSubmarineRotating(m_lookInput.sqrMagnitude > 0.25f);
+	}
+
+	private void OnCollisionEnter(Collision collision)
+	{
+		if (collision.collider.CompareTag("Environment") && Time.time > m_lastCollisionTime + m_collisionBuffer)
+		{
+			m_lastCollisionTime = Time.time;
+
+			CreatureBehaviour.Instance.AddSound(transform.position, m_collisionVolume, m_collisionSoundDuration);
+			AudioManager.Instance.PlaySubmarineCrash();
+
+			Debug.Log("Crash!");
+		}
 	}
 
 	#endregion

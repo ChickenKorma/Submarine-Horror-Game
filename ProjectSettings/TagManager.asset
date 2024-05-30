@@ -6,6 +6,7 @@ TagManager:
   tags:
   - Node
   - Beacon
+  - Environment
   layers:
   - Default
   - TransparentFX

@@ -77,25 +77,19 @@ public class AudioManager : MonoBehaviour
 	public void PlaySubmarineCrash()
 	{
 		PlayCollision();
-		PlayCreaking(0.5f);
+		PlayCreaking(0.8f);
 	}
 
 	private void PlayCollision()
 	{
-		if (!m_collisionAudioSource.isPlaying)
-		{
-			m_collisionAudioSource.clip = m_sonarPingClips[Random.Range(0, m_sonarPingClips.Length - 1)];
-			m_collisionAudioSource.Play();
-		}
+		m_collisionAudioSource.clip = m_collisionClips[Random.Range(0, m_sonarPingClips.Length - 1)];
+		m_collisionAudioSource.Play();
 	}
 
 	private void PlayCreaking(float delay = 0)
 	{
-		if (!m_creakingAudioSource.isPlaying)
-		{
-			m_creakingAudioSource.clip = m_sonarPingClips[Random.Range(0, m_sonarPingClips.Length - 1)];
-			m_creakingAudioSource.PlayDelayed(delay);
-		}
+		m_creakingAudioSource.clip = m_creakingClips[Random.Range(0, m_sonarPingClips.Length - 1)];
+		m_creakingAudioSource.PlayDelayed(delay);
 	}
 
 	#endregion

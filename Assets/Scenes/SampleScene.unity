@@ -526,7 +526,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   m_graphTextAsset: {fileID: 4900000, guid: f5b206839c3534d42add362f37253630, type: 3}
-  m_travelSpeed: 10
+  m_travelSpeed: 0
   m_nodePositionTolerance: 0
   m_playerTransform: {fileID: 1036109453}
   m_attackDistance: 5
@@ -1091,7 +1091,7 @@ AudioSource:
   OutputAudioMixerGroup: {fileID: 24300002, guid: 066b76c2e38b3b24a86d4288665496e8, type: 2}
   m_audioClip: {fileID: 8300000, guid: 139ad05421ede1e42b6f6af0dcdf6bb9, type: 3}
   m_PlayOnAwake: 0
-  m_Volume: 1
+  m_Volume: 0.9
   m_Pitch: 1
   Loop: 0
   Mute: 0
@@ -1283,7 +1283,7 @@ AudioSource:
   OutputAudioMixerGroup: {fileID: 24300002, guid: 066b76c2e38b3b24a86d4288665496e8, type: 2}
   m_audioClip: {fileID: 8300000, guid: 6ab976a19e5136d49a2cbd69a17e05bc, type: 3}
   m_PlayOnAwake: 0
-  m_Volume: 1
+  m_Volume: 0.9
   m_Pitch: 1
   Loop: 0
   Mute: 0
@@ -1379,7 +1379,7 @@ AudioSource:
   OutputAudioMixerGroup: {fileID: 24300002, guid: 066b76c2e38b3b24a86d4288665496e8, type: 2}
   m_audioClip: {fileID: 8300000, guid: 4cf0f41c2960494448f8eaae9f4e26ac, type: 3}
   m_PlayOnAwake: 0
-  m_Volume: 0.7
+  m_Volume: 0.6
   m_Pitch: 1
   Loop: 0
   Mute: 0
@@ -1475,7 +1475,7 @@ AudioSource:
   OutputAudioMixerGroup: {fileID: 24300002, guid: 066b76c2e38b3b24a86d4288665496e8, type: 2}
   m_audioClip: {fileID: 8300000, guid: 462450cac1a654f41a34af111428e63a, type: 3}
   m_PlayOnAwake: 0
-  m_Volume: 1
+  m_Volume: 0.9
   m_Pitch: 1
   Loop: 1
   Mute: 0
@@ -1571,7 +1571,7 @@ AudioSource:
   OutputAudioMixerGroup: {fileID: 24300002, guid: 066b76c2e38b3b24a86d4288665496e8, type: 2}
   m_audioClip: {fileID: 8300000, guid: 3a68b54b94bad8d43a996737194328a4, type: 3}
   m_PlayOnAwake: 0
-  m_Volume: 0.65
+  m_Volume: 0.55
   m_Pitch: 1
   Loop: 1
   Mute: 0
@@ -1667,7 +1667,7 @@ AudioSource:
   OutputAudioMixerGroup: {fileID: 24300002, guid: 066b76c2e38b3b24a86d4288665496e8, type: 2}
   m_audioClip: {fileID: 8300000, guid: e9833d42b3f1e694e9682cbe366d1c37, type: 3}
   m_PlayOnAwake: 1
-  m_Volume: 0.5
+  m_Volume: 0.4
   m_Pitch: 1
   Loop: 1
   Mute: 0
@@ -1763,7 +1763,7 @@ AudioSource:
   OutputAudioMixerGroup: {fileID: 24300002, guid: 066b76c2e38b3b24a86d4288665496e8, type: 2}
   m_audioClip: {fileID: 8300000, guid: dbd86f90f39e35749964d69258c80fbf, type: 3}
   m_PlayOnAwake: 1
-  m_Volume: 0.9
+  m_Volume: 0.8
   m_Pitch: 1
   Loop: 1
   Mute: 0
@@ -1859,7 +1859,7 @@ AudioSource:
   OutputAudioMixerGroup: {fileID: 24300002, guid: 066b76c2e38b3b24a86d4288665496e8, type: 2}
   m_audioClip: {fileID: 8300000, guid: c07db26f75e8d4f48af7f8c7138badda, type: 3}
   m_PlayOnAwake: 0
-  m_Volume: 0.7
+  m_Volume: 0.6
   m_Pitch: 1
   Loop: 0
   Mute: 0
@@ -3604,6 +3604,9 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   m_thrust: 5
   m_turnSpeed: 20
+  m_collisionBuffer: 1
+  m_collisionVolume: 1
+  m_collisionSoundDuration: 5
 --- !u!54 &1036109457
 Rigidbody:
   m_ObjectHideFlags: 0
@@ -3618,7 +3621,7 @@ Rigidbody:
   m_UseGravity: 0
   m_IsKinematic: 0
   m_Interpolate: 0
-  m_Constraints: 64
+  m_Constraints: 112
   m_CollisionDetection: 0
 --- !u!114 &1036109458
 MonoBehaviour:
@@ -4958,6 +4961,25 @@ Transform:
   m_Father: {fileID: 152724541}
   m_RootOrder: 12
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!1 &1932601404 stripped
+GameObject:
+  m_CorrespondingSourceObject: {fileID: 919132149155446097, guid: 01bf4b8e972eeb4418201ac02ef79234, type: 3}
+  m_PrefabInstance: {fileID: 1951869963}
+  m_PrefabAsset: {fileID: 0}
+--- !u!64 &1932601408
+MeshCollider:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1932601404}
+  m_Material: {fileID: 0}
+  m_IsTrigger: 0
+  m_Enabled: 1
+  serializedVersion: 4
+  m_Convex: 0
+  m_CookingOptions: 30
+  m_Mesh: {fileID: -462981019419857548, guid: 01bf4b8e972eeb4418201ac02ef79234, type: 3}
 --- !u!1 &1934539391
 GameObject:
   m_ObjectHideFlags: 0
@@ -5342,6 +5364,10 @@ PrefabInstance:
     - target: {fileID: 919132149155446097, guid: 01bf4b8e972eeb4418201ac02ef79234, type: 3}
       propertyPath: m_IsActive
       value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 919132149155446097, guid: 01bf4b8e972eeb4418201ac02ef79234, type: 3}
+      propertyPath: m_TagString
+      value: Environment
       objectReference: {fileID: 0}
     m_RemovedComponents: []
   m_SourcePrefab: {fileID: 100100000, guid: 01bf4b8e972eeb4418201ac02ef79234, type: 3}
