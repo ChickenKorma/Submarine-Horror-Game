@@ -12,17 +12,17 @@ public class UIManager : MonoBehaviour
 	[SerializeField] private GameObject m_gameOverScreen;
 	[SerializeField] private GameObject m_gameWonScreen;
 
-	// Sonar
+	[Header("Sonar Use Indicator")]
 	[SerializeField] private Color m_red;
 	[SerializeField] private Color m_green;
 
 	[SerializeField] private Image m_pingIndicatorPanel;
 	[SerializeField] private TMP_Text m_pingIndicatorText;
 
-	// Beacon
+	[Header("Beacon Use Indicator")]
 	[SerializeField] private Slider m_beaconInputSlider;
 
-	// Motion indicator
+	[Header("Motion Detector")]
 	[SerializeField] private Transform m_creatureTransform;
 	[SerializeField] private Transform m_playerTransform;
 	[SerializeField] private Transform m_exitTransform;
