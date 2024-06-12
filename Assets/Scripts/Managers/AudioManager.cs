@@ -9,7 +9,11 @@ public class AudioManager : MonoBehaviour
 
 	public AudioMixer MainAudioMixer;
 
-	// Submarine
+	[Header("Creature Sources")]
+	[SerializeField] private AudioSource m_creatureMovingAudioSource;
+	[SerializeField] private AudioSource m_creatureVocalAudioSource;
+	[SerializeField] private AudioSource m_creatureAttackAudioSource;
+
 	[Header("Submarine Sources")]
 	[SerializeField] private AudioSource m_submarineMovingAudioSource;
 	[SerializeField] private AudioSource m_submarineRotatingAudioSource;
@@ -27,6 +31,8 @@ public class AudioManager : MonoBehaviour
 	[SerializeField] private AudioClip[] m_sonarPingClips;
 	[SerializeField] private AudioClip[] m_collisionClips;
 	[SerializeField] private AudioClip[] m_creakingClips;
+	[SerializeField] private AudioClip[] m_creatureGrowlClips;
+	[SerializeField] private AudioClip[] m_creatureRoarClips;
 
 	#endregion
 
@@ -39,6 +45,18 @@ public class AudioManager : MonoBehaviour
 		else
 			Instance = this;
 	}
+
+	#endregion
+
+	#region Creature sounds
+
+	public void SetCreatureMoving(bool moving) => SetSound(m_creatureMovingAudioSource, moving);
+
+	public void PlayCreatureGrowl() => PlaySound(m_creatureVocalAudioSource, forcePlay: true, clips: m_creatureGrowlClips);
+
+	public float PlayCreatureRoar() => PlaySound(m_creatureVocalAudioSource, forcePlay: true, clips: m_creatureRoarClips);
+
+	public void PlayCreatureAttack() => PlaySound(m_creatureAttackAudioSource, forcePlay: true);
 
 	#endregion
 
@@ -78,7 +96,7 @@ public class AudioManager : MonoBehaviour
 
 	#region Helper methods
 
-	private void PlaySound(AudioSource audioSource, bool forcePlay = false, float? delay = null, AudioClip[] clips = null)
+	private float PlaySound(AudioSource audioSource, bool forcePlay = false, float? delay = null, AudioClip[] clips = null)
 	{
 		if (forcePlay || (!forcePlay && !audioSource.isPlaying))
 		{
@@ -88,8 +106,10 @@ public class AudioManager : MonoBehaviour
 			if (delay is not null)
 				audioSource.PlayDelayed((float)delay);
 			else
-			audioSource.Play();
+				audioSource.Play();
 		}
+
+		return audioSource.clip.length;
 	}
 
 	private void SetSound(AudioSource audioSource, bool playSound)

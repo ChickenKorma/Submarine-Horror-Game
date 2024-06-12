@@ -54,6 +54,9 @@ public class CreatureBehaviour : MonoBehaviour
 
 	[SerializeField] private Transform m_soundLog;
 
+	private Coroutine m_roaringCoroutine;
+	private Coroutine m_growlingCoroutine;
+
 	#endregion
 
 	#region Unity
@@ -110,6 +113,8 @@ public class CreatureBehaviour : MonoBehaviour
 			}
 
 			transform.localScale = new Vector3(2, 2, 2);
+
+			m_roaringCoroutine ??= StartCoroutine(PlayRoaringSounds());
 		}
 		else
 		{
@@ -122,6 +127,8 @@ public class CreatureBehaviour : MonoBehaviour
 			}
 
 			transform.localScale = new Vector3(1, 1, 1);
+
+			m_growlingCoroutine ??= StartCoroutine(PlayGrowlingSounds());
 		}
 
 		m_currentTravelDistance += m_travelSpeed * Time.deltaTime;
@@ -280,7 +287,7 @@ public class CreatureBehaviour : MonoBehaviour
 
 	#endregion
 
-	#region Sound
+	#region Sound Logging
 
 	public void AddSound(Vector3 location, float volume, float duration)
 	{
@@ -323,6 +330,30 @@ public class CreatureBehaviour : MonoBehaviour
 		{
 			m_soundLog.position = new(2000, 0, 0);
 		}
+	}
+
+	#endregion
+
+	#region Audio
+
+	private IEnumerator PlayRoaringSounds()
+	{
+		while (IsHunting)
+			yield return new WaitForSeconds(AudioManager.Instance.PlayCreatureRoar() + UnityEngine.Random.Range(0.3f, 1f));
+
+		m_roaringCoroutine = null;
+	}
+
+	private IEnumerator PlayGrowlingSounds()
+	{
+		while (!IsHunting)
+		{
+			yield return new WaitForSeconds(UnityEngine.Random.Range(10, 15));
+
+			AudioManager.Instance.PlayCreatureGrowl();
+		}
+
+		m_growlingCoroutine = null;
 	}
 
 	#endregion
