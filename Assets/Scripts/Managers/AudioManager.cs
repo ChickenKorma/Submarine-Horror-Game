@@ -27,6 +27,8 @@ public class AudioManager : MonoBehaviour
 	[Header("UI Sources")]
 	[SerializeField] private AudioSource m_beepAudioSource;
 
+	private bool m_isAttacking;
+
 	[Header("Audio Clips")]
 	[SerializeField] private AudioClip[] m_sonarPingClips;
 	[SerializeField] private AudioClip[] m_collisionClips;
@@ -56,7 +58,24 @@ public class AudioManager : MonoBehaviour
 
 	public float PlayCreatureRoar() => PlaySound(m_creatureVocalAudioSource, forcePlay: true, clips: m_creatureRoarClips);
 
-	public void PlayCreatureAttack() => PlaySound(m_creatureAttackAudioSource, forcePlay: true);
+	public void CreatureAttackPlayer()
+	{
+		SetCreatureMoving(false);
+		SetSubmarineMoving(false);
+		SetSubmarineRotating(false);
+		m_creatureVocalAudioSource.Stop();
+
+		PlaySound(m_creatureAttackAudioSource, forcePlay: true);
+		m_isAttacking = true;
+	}
+
+	public void CreatureAttackBeacon()
+	{
+		SetCreatureMoving(false);
+		m_creatureVocalAudioSource.Stop();
+
+		PlaySound(m_creatureAttackAudioSource, forcePlay: true);
+	}
 
 	#endregion
 
@@ -98,6 +117,9 @@ public class AudioManager : MonoBehaviour
 
 	private float PlaySound(AudioSource audioSource, bool forcePlay = false, float? delay = null, AudioClip[] clips = null)
 	{
+		if (m_isAttacking)
+			return 100f;
+
 		if (forcePlay || (!forcePlay && !audioSource.isPlaying))
 		{
 			if (clips is not null)
@@ -114,6 +136,9 @@ public class AudioManager : MonoBehaviour
 
 	private void SetSound(AudioSource audioSource, bool playSound)
 	{
+		if (m_isAttacking)
+			return;
+
 		if (playSound)
 			PlaySound(audioSource);
 		else

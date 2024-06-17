@@ -27,6 +27,9 @@ public class CreatureBehaviour : MonoBehaviour
 	[SerializeField] private float m_attackDistance;
 	private float m_attackDistanceSquared;
 
+	[SerializeField] private float m_beaconAttackDuration;
+	private bool m_isAttackingBeacon;
+
 	public Action<bool> HuntingStateChanged = delegate { };
 	private bool m_isHunting;
 
@@ -85,7 +88,11 @@ public class CreatureBehaviour : MonoBehaviour
 
 	private void Update()
 	{
-		Move();
+		if (!m_isAttackingBeacon)
+		{
+			Move();
+			CheckForAttacks();
+		}
 	}
 
 	#endregion
@@ -146,22 +153,6 @@ public class CreatureBehaviour : MonoBehaviour
 		{
 			transform.position = m_currentNode.Position + ((m_targetNode.Position - m_currentNode.Position) * (float)(m_currentTravelDistance / m_targetNodeDistance));
 			transform.LookAt(m_targetNode.Position);
-		}
-
-		Vector3 directionToPlayer = m_playerTransform.position - transform.position;
-
-		if (Vector3.SqrMagnitude(directionToPlayer) <= m_attackDistanceSquared && Physics.Raycast(new Ray(transform.position, directionToPlayer), out RaycastHit playerHit) && playerHit.collider.CompareTag("Player"))
-		{
-			AttackedPlayer.Invoke();
-			AudioManager.Instance.MainAudioMixer.SetFloat("MasterVolume", -80);
-		}
-
-		if (Beacon.Instance != null)
-		{
-			Vector3 directionToBeacon = Beacon.Instance.transform.position - transform.position;
-
-			if (Vector3.SqrMagnitude(directionToBeacon) <= m_attackDistanceSquared && Physics.Raycast(new Ray(transform.position, directionToBeacon), out RaycastHit beaconHit) && beaconHit.collider.CompareTag("Beacon"))
-				Destroy(Beacon.Instance.gameObject);
 		}
 	}
 
@@ -283,6 +274,45 @@ public class CreatureBehaviour : MonoBehaviour
 		}
 
 		return nearestNode;
+	}
+
+	#endregion
+
+	#region Attacking
+
+	private void CheckForAttacks()
+	{
+		if (Beacon.Instance != null)
+		{
+			Vector3 directionToBeacon = Beacon.Instance.transform.position - transform.position;
+
+			if (Vector3.SqrMagnitude(directionToBeacon) <= m_attackDistanceSquared && Physics.Raycast(new Ray(transform.position, directionToBeacon), out RaycastHit beaconHit) && beaconHit.collider.CompareTag("Beacon"))
+			{
+				Destroy(Beacon.Instance.gameObject);
+				AudioManager.Instance.CreatureAttackBeacon();
+				StartCoroutine(AwaitBeaconAttack());
+			}
+		}
+
+		if (!m_isAttackingBeacon)
+		{
+			Vector3 directionToPlayer = m_playerTransform.position - transform.position;
+
+			if (Vector3.SqrMagnitude(directionToPlayer) <= m_attackDistanceSquared && Physics.Raycast(new Ray(transform.position, directionToPlayer), out RaycastHit playerHit) && playerHit.collider.CompareTag("Player"))
+			{
+				AttackedPlayer.Invoke();
+				AudioManager.Instance.CreatureAttackPlayer();
+			}
+		}
+	}
+
+	private IEnumerator AwaitBeaconAttack()
+	{
+		m_isAttackingBeacon = true;
+
+		yield return new WaitForSeconds(m_beaconAttackDuration);
+
+		m_isAttackingBeacon = false;
 	}
 
 	#endregion

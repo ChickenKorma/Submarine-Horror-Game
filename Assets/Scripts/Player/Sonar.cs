@@ -19,7 +19,6 @@ public class Sonar : MonoBehaviour
 	[SerializeField] private float m_pingSoundDuration;
 
 	private bool m_pingEnabled;
-	private bool m_beaconActive;
 
 	private bool m_beaconInputHeld;
 	[SerializeField] private float m_beaconInputHoldSpeed;
