@@ -3,7 +3,7 @@ using System.IO;
 using UnityEngine;
 
 // Data is saved as so :
-// "index,positionx,positiony,positionz,connectionIndex1,connectionIndex2 ..."
+// "index,wanderable,positionx,positiony,positionz,connectionIndex1,connectionIndex2 ..."
 
 public static class GraphData
 {
@@ -17,6 +17,7 @@ public static class GraphData
 			List<string> nodeData = new()
 			{
 				node.Index.ToString(),
+				node.Wanderable ? "1" : "0",
 				node.Position.x.ToString(),
 				node.Position.y.ToString(),
 				node.Position.z.ToString()
@@ -39,8 +40,8 @@ public static class GraphData
 		{
 			while (reader.Peek() >= 0)
 			{
-				string nodeData = reader.ReadLine();
-				nodes.Add(TextToNode(nodeData));
+				Node node = TextToNode(reader.ReadLine());
+				nodes.Add(node);
 			}
 		}
 
@@ -52,16 +53,21 @@ public static class GraphData
 		string[] lines = asset.text.Split(new char[] { '\r', '\n' });
 
 		List<Node> nodes = new();
+		List<Node> wanderableNodes = new();
 
 		foreach (string line in lines)
 		{
 			if (!string.IsNullOrEmpty(line))
 			{
-				nodes.Add(TextToNode(line));
+				Node node = TextToNode(line);
+				nodes.Add(node);
+
+				if (node.Wanderable)
+					wanderableNodes.Add(node);
 			}
 		}
 
-		return new() { Nodes = nodes.ToArray() };
+		return new() { Nodes = nodes.ToArray(), WanderableNodes = wanderableNodes.ToArray() };
 	}
 
 	private static Node TextToNode(string text)
@@ -69,17 +75,18 @@ public static class GraphData
 		string[] nodeData = text.Split(',');
 
 		int index = int.Parse(nodeData[0]);
-		float posX = float.Parse(nodeData[1]);
-		float posY = float.Parse(nodeData[2]);
-		float posZ = float.Parse(nodeData[3]);
+		bool wanderable = nodeData[1].Equals("1");
+		float posX = float.Parse(nodeData[2]);
+		float posY = float.Parse(nodeData[3]);
+		float posZ = float.Parse(nodeData[4]);
 
 		List<int> connections = new();
 
-		for (int i = 4; i < nodeData.Length; i++)
+		for (int i = 5; i < nodeData.Length; i++)
 		{
 			connections.Add(int.Parse(nodeData[i]));
 		}
 
-		return new Node(index, new Vector3(posX, posY, posZ), connections);
+		return new Node(index, wanderable, new Vector3(posX, posY, posZ), connections);
 	}
 }

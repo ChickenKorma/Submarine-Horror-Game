@@ -5,6 +5,8 @@ public class Waypoint : MonoBehaviour
 {
 	public List<Waypoint> Connections = new();
 
+	public bool Wanderable = true;
+
 	public void AddConnection(Waypoint connection)
 	{
 		if (!Connections.Contains(connection) && connection != this)

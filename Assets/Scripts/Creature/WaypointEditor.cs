@@ -9,10 +9,10 @@ public class WaypointEditor
 	{
 		if (waypoint != null)
 		{
-			Gizmos.color = gizmoType == GizmoType.Selected ? Color.green : Color.yellow;
-			Gizmos.DrawSphere(waypoint.transform.position, 0.5f);
+			Gizmos.color = waypoint.Wanderable ? Color.green : Color.red;
+			Gizmos.DrawSphere(waypoint.transform.position, 0.8f);
 
-			Gizmos.color = Color.red;
+			Gizmos.color = Color.yellow;
 
 			foreach (Waypoint connection in waypoint.Connections)
 			{

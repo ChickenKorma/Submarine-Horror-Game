@@ -67,6 +67,9 @@ public class WaypointEditorWindow : EditorWindow
 
 		if (GUILayout.Button("Unlink Waypoints"))
 			UnlinkWaypoints();
+
+		if (GUILayout.Button("Toggle Wanderable"))
+			ToggleWanderableWaypoints();
 	}
 
 	private GameObject CreateWaypoint(Vector3 position = new Vector3())
@@ -80,9 +83,7 @@ public class WaypointEditorWindow : EditorWindow
 
 	private void DeleteWaypoints()
 	{
-		Waypoint[] waypoints = GetSelectedWaypoints();
-
-		foreach (Waypoint waypoint in waypoints)
+		foreach (Waypoint waypoint in GetSelectedWaypoints())
 		{
 			foreach (Waypoint connection in waypoint.Connections)
 			{
@@ -121,6 +122,12 @@ public class WaypointEditorWindow : EditorWindow
 		}
 	}
 
+	private void ToggleWanderableWaypoints()
+	{
+		foreach (Waypoint waypoint in GetSelectedWaypoints())
+			waypoint.Wanderable = !waypoint.Wanderable;
+	}
+
 	private Waypoint[] GetSelectedWaypoints()
 	{
 		List<Waypoint> waypoints = new();
@@ -142,7 +149,7 @@ public class WaypointEditorWindow : EditorWindow
 	{
 		if (GUILayout.Button("Save Graph"))
 		{
-			string savePath = EditorUtility.SaveFilePanelInProject("Save graph", "Graph.txt", "txt", "Select location and name to save graph");
+			string savePath = EditorUtility.SaveFilePanelInProject("Save graph", "Graph.txt", "txt", "Select location and name to save graph", "Assets/Resources/");
 
 			if (savePath != null)
 				SaveGraph(savePath);
@@ -150,7 +157,7 @@ public class WaypointEditorWindow : EditorWindow
 
 		if (GUILayout.Button("Load Graph"))
 		{
-			string graphPath = EditorUtility.OpenFilePanel("Select graph text file", "Assets", "txt");
+			string graphPath = EditorUtility.OpenFilePanel("Select graph text file", "Assets/Resources/", "txt");
 
 			if (graphPath != null)
 			{
@@ -198,6 +205,7 @@ public class WaypointEditorWindow : EditorWindow
 		for (int i = 0; i < graph.Nodes.Length; i++)
 		{
 			waypoints[i] = CreateWaypoint(graph.Nodes[i].Position).GetComponent<Waypoint>();
+			waypoints[i].Wanderable = graph.Nodes[i].Wanderable;
 		}
 
 		for (int i = 0; i < graph.Nodes.Length; i++)

@@ -9,15 +9,15 @@ public class CreatureBehaviour : MonoBehaviour
 
 	public static CreatureBehaviour Instance { get; private set; }
 
-	[SerializeField] private TextAsset m_graphTextAsset;
-	private Node[] m_navigationGraph;
+	private Node[] m_navigationGraphNodes;
+	private Node[] m_wanderableGraphNodes;
 
 	private List<Node> m_currentPath = new();
 	private Node m_currentNode;
 	private Node m_targetNode;
 
 	[SerializeField] private float m_travelSpeed;
-	private float m_targetNodeDistance = 0;
+	private float m_targetNodeDistance = 10000;
 	private float m_currentTravelDistance = 0;
 
 	[SerializeField] private float m_nodePositionTolerance;
@@ -60,6 +60,8 @@ public class CreatureBehaviour : MonoBehaviour
 	private Coroutine m_roaringCoroutine;
 	private Coroutine m_growlingCoroutine;
 
+	[SerializeField] private string m_graphTextFileName;
+
 	#endregion
 
 	#region Unity
@@ -74,14 +76,13 @@ public class CreatureBehaviour : MonoBehaviour
 
 	private void Start()
 	{
-		m_navigationGraph = GraphData.LoadGraph(m_graphTextAsset).Nodes;
+		GraphModel graphModel = GraphData.LoadGraph(Resources.Load<TextAsset>(m_graphTextFileName));
+		m_navigationGraphNodes = graphModel.Nodes;
+		m_wanderableGraphNodes = graphModel.WanderableNodes;
 
-		if (m_navigationGraph == null)
-			throw new NullReferenceException();
+		m_currentNode = m_navigationGraphNodes[0];
 
 		m_soundBuffer = new List<SoundLog>();
-
-		m_currentNode = m_navigationGraph[14];
 
 		m_attackDistanceSquared = m_attackDistance * m_attackDistance;
 	}
@@ -112,11 +113,11 @@ public class CreatureBehaviour : MonoBehaviour
 			{
 				if (m_targetNode == null)
 				{
-					m_currentPath = GetShortestPath(m_navigationGraph, m_currentNode, m_averageSoundNode);
+					m_currentPath = GetShortestPath(m_currentNode, m_averageSoundNode);
 					IncrementTargetNode();
 				}
 				else
-					m_currentPath = GetShortestPath(m_navigationGraph, m_targetNode, m_averageSoundNode);
+					m_currentPath = GetShortestPath(m_targetNode, m_averageSoundNode);
 			}
 
 			transform.localScale = new Vector3(2, 2, 2);
@@ -128,7 +129,7 @@ public class CreatureBehaviour : MonoBehaviour
 			if (m_targetNode == null)
 			{
 				if (m_currentPath.Count == 0)
-					m_currentPath = GetShortestPath(m_navigationGraph, m_currentNode, m_navigationGraph[UnityEngine.Random.Range(0, m_navigationGraph.Length)]);
+					m_currentPath = GetShortestPath(m_currentNode, m_wanderableGraphNodes[UnityEngine.Random.Range(0, m_wanderableGraphNodes.Length)], true);
 
 				IncrementTargetNode();
 			}
@@ -172,8 +173,10 @@ public class CreatureBehaviour : MonoBehaviour
 	}
 
 	// Shortest path between source and destination excluding source node in final path
-	private static List<Node> GetShortestPath(Node[] nodes, Node source, Node destination)
+	private List<Node> GetShortestPath(Node source, Node destination, bool wandering = false)
 	{
+		Node[] nodes = m_navigationGraphNodes;
+
 		if (source == destination)
 			return new();
 
@@ -214,8 +217,11 @@ public class CreatureBehaviour : MonoBehaviour
 			{
 				for (int i = 0; i < connectionIndexes.Count; i++)
 				{
-					Node adjacentNode = nodes[connectionIndexes[i]];
 					int adjacentIndex = connectionIndexes[i];
+					Node adjacentNode = m_navigationGraphNodes[adjacentIndex];
+
+					if (wandering && !adjacentNode.Wanderable)
+						continue;
 
 					if (isNodeVisited[adjacentIndex] == false)
 					{
@@ -248,18 +254,18 @@ public class CreatureBehaviour : MonoBehaviour
 
 	private Node GetNearestNode(Vector3 position)
 	{
-		Node nearestNode = m_navigationGraph[0];
+		Node nearestNode = m_navigationGraphNodes[0];
 		float nearestDistance = Vector3.SqrMagnitude(position - nearestNode.Position);
 
 		if (nearestDistance > m_nodePositionTolerance)
 		{
-			for (int i = 1; i < m_navigationGraph.Length; i++)
+			for (int i = 1; i < m_navigationGraphNodes.Length; i++)
 			{
-				float distance = Vector3.SqrMagnitude(position - m_navigationGraph[i].Position);
+				float distance = Vector3.SqrMagnitude(position - m_navigationGraphNodes[i].Position);
 
 				if (distance < nearestDistance)
 				{
-					nearestNode = m_navigationGraph[i];
+					nearestNode = m_navigationGraphNodes[i];
 
 					if (distance < m_nodePositionTolerance)
 					{
