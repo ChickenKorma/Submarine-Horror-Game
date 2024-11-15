@@ -57,8 +57,6 @@ public class Submarine : MonoBehaviour
 
 			CreatureBehaviour.Instance.AddSound(transform.position, m_collisionVolume, m_collisionSoundDuration);
 			AudioManager.Instance.PlaySubmarineCrash();
-
-			Debug.Log("Crash!");
 		}
 	}
 

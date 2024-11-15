@@ -55,7 +55,7 @@ public class WaypointEditorWindow : EditorWindow
 	{
 		if (GUILayout.Button("Create Waypoint"))
 		{
-			GameObject waypointObj = CreateWaypoint();
+			GameObject waypointObj = CreateNewWaypoint();
 			Selection.activeGameObject = waypointObj;
 		}
 
@@ -70,6 +70,23 @@ public class WaypointEditorWindow : EditorWindow
 
 		if (GUILayout.Button("Toggle Wanderable"))
 			ToggleWanderableWaypoints();
+	}
+
+	private GameObject CreateNewWaypoint()
+	{
+		Waypoint[] selectedWaypoints = GetSelectedWaypoints();
+
+		if (selectedWaypoints.Length != 0)
+			return CreateWaypoint(selectedWaypoints[0].transform.position);
+		else
+		{
+			Waypoint[] waypoints = waypointRoot.GetComponentsInChildren<Waypoint>();
+
+			if (waypoints.Length != 0)
+				return CreateWaypoint(waypoints[waypoints.Length - 1].transform.position);
+		}
+
+		return CreateWaypoint();
 	}
 
 	private GameObject CreateWaypoint(Vector3 position = new Vector3())
@@ -134,7 +151,7 @@ public class WaypointEditorWindow : EditorWindow
 
 		foreach (GameObject obj in Selection.gameObjects)
 		{
-			if (obj.TryGetComponent<Waypoint>(out Waypoint waypoint))
+			if (obj.TryGetComponent(out Waypoint waypoint))
 				waypoints.Add(waypoint);
 		}
 
