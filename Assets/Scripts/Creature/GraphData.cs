@@ -17,7 +17,6 @@ public static class GraphData
 			List<string> nodeData = new()
 			{
 				node.Index.ToString(),
-				node.Wanderable ? "1" : "0",
 				node.Position.x.ToString(),
 				node.Position.y.ToString(),
 				node.Position.z.ToString()
@@ -61,13 +60,10 @@ public static class GraphData
 			{
 				Node node = TextToNode(line);
 				nodes.Add(node);
-
-				if (node.Wanderable)
-					wanderableNodes.Add(node);
 			}
 		}
 
-		return new() { Nodes = nodes.ToArray(), WanderableNodes = wanderableNodes.ToArray() };
+		return new() { Nodes = nodes.ToArray() };
 	}
 
 	private static Node TextToNode(string text)
@@ -75,18 +71,17 @@ public static class GraphData
 		string[] nodeData = text.Split(',');
 
 		int index = int.Parse(nodeData[0]);
-		bool wanderable = nodeData[1].Equals("1");
-		float posX = float.Parse(nodeData[2]);
-		float posY = float.Parse(nodeData[3]);
-		float posZ = float.Parse(nodeData[4]);
+		float posX = float.Parse(nodeData[1]);
+		float posY = float.Parse(nodeData[2]);
+		float posZ = float.Parse(nodeData[3]);
 
 		List<int> connections = new();
 
-		for (int i = 5; i < nodeData.Length; i++)
+		for (int i = 4; i < nodeData.Length; i++)
 		{
 			connections.Add(int.Parse(nodeData[i]));
 		}
 
-		return new Node(index, wanderable, new Vector3(posX, posY, posZ), connections);
+		return new Node(index, new Vector3(posX, posY, posZ), connections);
 	}
 }

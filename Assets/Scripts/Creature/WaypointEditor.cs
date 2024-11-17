@@ -9,7 +9,7 @@ public class WaypointEditor
 	{
 		if (waypoint != null)
 		{
-			Gizmos.color = waypoint.Wanderable ? Color.green : Color.red;
+			Gizmos.color = Color.green;
 			Gizmos.DrawSphere(waypoint.transform.position, 0.8f);
 
 			Gizmos.color = Color.yellow;

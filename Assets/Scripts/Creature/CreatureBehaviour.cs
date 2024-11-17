@@ -10,7 +10,6 @@ public class CreatureBehaviour : MonoBehaviour
 	public static CreatureBehaviour Instance { get; private set; }
 
 	private Node[] m_navigationGraphNodes;
-	private Node[] m_wanderableGraphNodes;
 
 	private List<Node> m_currentPath = new();
 	private Node m_currentNode;
@@ -78,7 +77,6 @@ public class CreatureBehaviour : MonoBehaviour
 	{
 		GraphModel graphModel = GraphData.LoadGraph(Resources.Load<TextAsset>(m_graphTextFileName));
 		m_navigationGraphNodes = graphModel.Nodes;
-		m_wanderableGraphNodes = graphModel.WanderableNodes;
 
 		m_currentNode = m_navigationGraphNodes[0];
 
@@ -129,7 +127,7 @@ public class CreatureBehaviour : MonoBehaviour
 			if (m_targetNode == null)
 			{
 				if (m_currentPath.Count == 0)
-					m_currentPath = GetShortestPath(m_currentNode, m_wanderableGraphNodes[UnityEngine.Random.Range(0, m_wanderableGraphNodes.Length)], true);
+					m_currentPath = GetShortestPath(m_currentNode, m_navigationGraphNodes[UnityEngine.Random.Range(0, m_navigationGraphNodes.Length)], true);
 
 				IncrementTargetNode();
 			}
@@ -219,9 +217,6 @@ public class CreatureBehaviour : MonoBehaviour
 				{
 					int adjacentIndex = connectionIndexes[i];
 					Node adjacentNode = m_navigationGraphNodes[adjacentIndex];
-
-					if (wandering && !adjacentNode.Wanderable)
-						continue;
 
 					if (isNodeVisited[adjacentIndex] == false)
 					{

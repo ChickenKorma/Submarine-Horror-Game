@@ -67,9 +67,6 @@ public class WaypointEditorWindow : EditorWindow
 
 		if (GUILayout.Button("Unlink Waypoints"))
 			UnlinkWaypoints();
-
-		if (GUILayout.Button("Toggle Wanderable"))
-			ToggleWanderableWaypoints();
 	}
 
 	private GameObject CreateNewWaypoint()
@@ -137,12 +134,6 @@ public class WaypointEditorWindow : EditorWindow
 					waypoints[i].RemoveConnection(waypoints[j]);
 			}
 		}
-	}
-
-	private void ToggleWanderableWaypoints()
-	{
-		foreach (Waypoint waypoint in GetSelectedWaypoints())
-			waypoint.Wanderable = !waypoint.Wanderable;
 	}
 
 	private Waypoint[] GetSelectedWaypoints()
@@ -222,7 +213,6 @@ public class WaypointEditorWindow : EditorWindow
 		for (int i = 0; i < graph.Nodes.Length; i++)
 		{
 			waypoints[i] = CreateWaypoint(graph.Nodes[i].Position).GetComponent<Waypoint>();
-			waypoints[i].Wanderable = graph.Nodes[i].Wanderable;
 		}
 
 		for (int i = 0; i < graph.Nodes.Length; i++)
