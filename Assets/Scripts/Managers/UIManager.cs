@@ -37,13 +37,11 @@ public class UIManager : MonoBehaviour
 	[SerializeField] private float m_maxIndicatedObjectDistance;
 	[SerializeField] private float m_maxIndicatorScreenDistance;
 
-	[SerializeField] private float m_wanderingCreatureFlashSpeed;
-	[SerializeField] private float m_huntingCreatureFlashSpeed;
+	[SerializeField] private float m_creatureMinFlashSpeed;
+	[SerializeField] private float m_creatureMaxFlashSpeed;
 	[SerializeField] private float m_beaconFlashSpeed;
 
 	[SerializeField] private RectTransform m_exitIndicatorTransform;
-
-	private bool m_isHunting;
 
 	private static Vector2 s_motionIndicatorPositionOffset = new(-100, 100);
 
@@ -64,7 +62,6 @@ public class UIManager : MonoBehaviour
 
 	private void Start()
 	{
-		OnHuntingStateChanged(false);
 		UpdateBeaconIndicator(0);
 
 		StartCoroutine(FlashCreatureIndicator());
@@ -86,7 +83,6 @@ public class UIManager : MonoBehaviour
 		ExitDetection.Instance.GameWon += GameWon;
 
 		CreatureBehaviour.Instance.AttackedPlayer += GameOver;
-		CreatureBehaviour.Instance.HuntingStateChanged += OnHuntingStateChanged;
 
 		Sonar.Instance.PingStateChanged += UpdateSonarIndicator;
 		Sonar.Instance.BeaconInputHold += UpdateBeaconIndicator;
@@ -97,7 +93,6 @@ public class UIManager : MonoBehaviour
 		ExitDetection.Instance.GameWon -= GameWon;
 
 		CreatureBehaviour.Instance.AttackedPlayer -= GameOver;
-		CreatureBehaviour.Instance.HuntingStateChanged -= OnHuntingStateChanged;
 
 		Sonar.Instance.PingStateChanged -= UpdateSonarIndicator;
 		Sonar.Instance.BeaconInputHold -= UpdateBeaconIndicator;
@@ -149,7 +144,7 @@ public class UIManager : MonoBehaviour
 	{
 		while (m_inGame)
 		{
-			float creatureIndicatorFlashSpeed = m_isHunting ? m_huntingCreatureFlashSpeed : m_wanderingCreatureFlashSpeed;
+			float creatureIndicatorFlashSpeed = m_creatureMaxFlashSpeed - (CreatureBehaviour.Instance.TotalVolumeFactor * (m_creatureMaxFlashSpeed - m_creatureMinFlashSpeed));
 			m_creatureIndicatorAnimator.speed = creatureIndicatorFlashSpeed;
 
 			m_creaturePosition = m_creatureTransform.position;
@@ -183,8 +178,6 @@ public class UIManager : MonoBehaviour
 
 		indicatorTransform.anchoredPosition = new Vector2(directionToTarget.x, directionToTarget.z) + s_motionIndicatorPositionOffset;
 	}
-
-	private void OnHuntingStateChanged(bool isHunting) => m_isHunting = isHunting;
 
 	private void UpdateExitIndicator()
 	{

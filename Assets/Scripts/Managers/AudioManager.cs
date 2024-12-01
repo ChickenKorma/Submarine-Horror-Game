@@ -11,8 +11,12 @@ public class AudioManager : MonoBehaviour
 
 	[Header("Creature Sources")]
 	[SerializeField] private AudioSource m_creatureMovingAudioSource;
-	[SerializeField] private AudioSource m_creatureVocalAudioSource;
+	[SerializeField] private AudioSource m_creatureRoarAudioSource;
+	[SerializeField] private AudioSource m_creatureGrowlAudioSource;
 	[SerializeField] private AudioSource m_creatureAttackAudioSource;
+
+	[SerializeField] private float m_creatureGrowlMinVolume;
+	[SerializeField] private float m_creatureGrowlMaxVolume;
 
 	[Header("Submarine Sources")]
 	[SerializeField] private AudioSource m_submarineMovingAudioSource;
@@ -54,16 +58,25 @@ public class AudioManager : MonoBehaviour
 
 	public void SetCreatureMoving(bool moving) => SetSound(m_creatureMovingAudioSource, moving);
 
-	public void PlayCreatureGrowl() => PlaySound(m_creatureVocalAudioSource, forcePlay: true, clips: m_creatureGrowlClips);
+	public float PlayCreatureGrowl() => PlaySound(m_creatureGrowlAudioSource, forcePlay: true, clips: m_creatureGrowlClips);
 
-	public float PlayCreatureRoar() => PlaySound(m_creatureVocalAudioSource, forcePlay: true, clips: m_creatureRoarClips);
+	public float PlayCreatureRoar() => PlaySound(m_creatureRoarAudioSource, forcePlay: true, clips: m_creatureRoarClips);
+
+	public void SetCreatureGrowlVolume(float inverseVolumeRatio)
+	{
+		inverseVolumeRatio = Mathf.Clamp01(inverseVolumeRatio);
+
+		m_creatureGrowlAudioSource.volume = m_creatureGrowlMaxVolume - (inverseVolumeRatio * (m_creatureGrowlMaxVolume - m_creatureGrowlMinVolume));
+	}
 
 	public void CreatureAttackPlayer()
 	{
 		SetCreatureMoving(false);
 		SetSubmarineMoving(false);
 		SetSubmarineRotating(false);
-		m_creatureVocalAudioSource.Stop();
+
+		m_creatureRoarAudioSource.Stop();
+		m_creatureGrowlAudioSource.Stop();
 
 		PlaySound(m_creatureAttackAudioSource, forcePlay: true);
 		m_isAttacking = true;
@@ -72,7 +85,9 @@ public class AudioManager : MonoBehaviour
 	public void CreatureAttackBeacon()
 	{
 		SetCreatureMoving(false);
-		m_creatureVocalAudioSource.Stop();
+
+		m_creatureRoarAudioSource.Stop();
+		m_creatureGrowlAudioSource.Stop();
 
 		PlaySound(m_creatureAttackAudioSource, forcePlay: true);
 	}

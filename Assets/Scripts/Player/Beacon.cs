@@ -10,7 +10,6 @@ public class Beacon : MonoBehaviour
 
 	[SerializeField] private float m_pingSpeed;
 	[SerializeField] private float m_pingMaxDistance;
-	[SerializeField] private float m_pingSoundDuration;
 
 	private bool m_pingEnabled;
 
@@ -48,7 +47,7 @@ public class Beacon : MonoBehaviour
 			m_pingEnabled = true;
 
 			m_lastPing = Instantiate(m_pingEmitterPrefab, transform.position, Quaternion.identity).GetComponent<Ping>();
-			m_lastPing.Setup("Beacon", m_pingSpeed, m_pingMaxDistance, m_pingSoundDuration);
+			m_lastPing.Setup("Beacon", m_pingSpeed, m_pingMaxDistance);
 
 			AudioManager.Instance.PlayBeaconSonarPing();
 		}

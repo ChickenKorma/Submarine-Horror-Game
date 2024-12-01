@@ -20,8 +20,6 @@ public class Ping : MonoBehaviour
 	private float m_distance;
 	private float m_maxDistance;
 
-	private float m_soundDuration;
-
 	private bool m_isSetup;
 
 	#endregion
@@ -55,7 +53,7 @@ public class Ping : MonoBehaviour
 
 	#region Implementation
 
-	public void Setup(string materialPropertyNamePrefix, float speed, float maxDistance, float soundDuration = 0)
+	public void Setup(string materialPropertyNamePrefix, float speed, float maxDistance)
 	{
 		m_enabledPropertyName = $"_{materialPropertyNamePrefix}PingEnabled";
 		m_originPropertyName = $"_{materialPropertyNamePrefix}PingOrigin";
@@ -64,7 +62,6 @@ public class Ping : MonoBehaviour
 
 		m_speed = speed;
 		m_maxDistance = maxDistance;
-		m_soundDuration = soundDuration;
 
 		m_distance = 0;
 
@@ -72,8 +69,6 @@ public class Ping : MonoBehaviour
 		m_material.SetVector(m_originPropertyName, transform.position);
 		m_material.SetFloat(m_distancePropertyName, m_distance);
 		m_material.SetFloat(m_maxDistancePropertyName, m_maxDistance);
-
-		CreatureBehaviour.Instance.AddSound(transform.position, 1, m_soundDuration);
 
 		Vector3 creatureModelPosition = m_creatureTransform.position;
 		Quaternion creatureModelRotation = m_creatureTransform.rotation * m_creaturePrefab.transform.rotation;

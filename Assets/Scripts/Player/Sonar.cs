@@ -16,7 +16,7 @@ public class Sonar : MonoBehaviour
 	[SerializeField] private float m_pingSpeed;
 	[SerializeField] private float m_pingMaxDistance;
 	[SerializeField] private float m_pingHold;
-	[SerializeField] private float m_pingSoundDuration;
+	[SerializeField] private float m_pingVolume;
 
 	private bool m_pingEnabled;
 
@@ -89,7 +89,8 @@ public class Sonar : MonoBehaviour
 			PingStateChanged.Invoke(true);
 
 			m_lastPing = Instantiate(m_pingEmitterPrefab, transform.position, Quaternion.identity).GetComponent<Ping>();
-			m_lastPing.Setup("Player", m_pingSpeed, m_pingMaxDistance, m_pingSoundDuration);
+			m_lastPing.Setup("Player", m_pingSpeed, m_pingMaxDistance);
+			CreatureBehaviour.Instance.AddSound(transform.position, m_pingVolume);
 
 			AudioManager.Instance.PlaySubmarineSonarPing();
 		}

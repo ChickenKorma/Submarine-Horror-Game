@@ -11,7 +11,6 @@ public class Submarine : MonoBehaviour
 	private float m_lastCollisionTime;
 
 	[SerializeField] private float m_collisionVolume;
-	[SerializeField] private float m_collisionSoundDuration;
 
 	private Rigidbody m_rb;
 
@@ -55,7 +54,7 @@ public class Submarine : MonoBehaviour
 		{
 			m_lastCollisionTime = Time.time;
 
-			CreatureBehaviour.Instance.AddSound(transform.position, m_collisionVolume, m_collisionSoundDuration);
+			CreatureBehaviour.Instance.AddSound(transform.position, m_collisionVolume);
 			AudioManager.Instance.PlaySubmarineCrash();
 		}
 	}

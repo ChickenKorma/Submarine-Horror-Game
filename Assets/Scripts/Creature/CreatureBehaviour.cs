@@ -9,19 +9,38 @@ public class CreatureBehaviour : MonoBehaviour
 
 	public static CreatureBehaviour Instance { get; private set; }
 
-	private Node[] m_navigationGraphNodes;
+	[SerializeField] private string m_graphTextFileName;
 
-	private List<Node> m_currentPath = new();
-	private Node m_currentNode;
-	private Node m_targetNode;
+	private WeightedNode[] m_nodes;
 
-	[SerializeField] private float m_travelSpeed;
-	private float m_targetNodeDistance = 10000;
-	private float m_currentTravelDistance = 0;
+	private List<WeightedNode> m_currentPath = new();
+	private WeightedNode m_currentNode;
+	private WeightedNode m_targetNode;
+	private Vector3 m_targetNodeNormalizedDirection;
 
 	[SerializeField] private float m_nodePositionTolerance;
 
+	private bool m_isOnGraph = true;
+	private bool m_returnToGraph;
+	private bool m_isBeaconActive;
+
+	private float m_totalNodeWeight;
+	private float m_maxSoundThreshold;
+	private float m_newWanderThreshold;
+
+	public float TotalVolumeFactor { get; private set; }
+
+	private float m_minGrowlDelay;
+	private float m_maxGrowlDelay;
+
+	[SerializeField] private float m_travelSpeed;
+	private float m_targetNodeDistance = 10000;
+	private float m_travelDistance = 0;
+
 	[SerializeField] private Transform m_playerTransform;
+
+	private WeightedNode m_beaconNode;
+	private Vector3 m_beaconPosition;
 
 	[SerializeField] private float m_attackDistance;
 	private float m_attackDistanceSquared;
@@ -29,37 +48,10 @@ public class CreatureBehaviour : MonoBehaviour
 	[SerializeField] private float m_beaconAttackDuration;
 	private bool m_isAttackingBeacon;
 
-	public Action<bool> HuntingStateChanged = delegate { };
-	private bool m_isHunting;
-
 	public Action AttackedPlayer = delegate { };
-
-	public bool IsHunting
-	{
-		get => m_isHunting;
-		private set
-		{
-			if (m_isHunting != value)
-			{
-				m_isHunting = value;
-				HuntingStateChanged.Invoke(value);
-			}
-		}
-	}
-
-	private List<SoundLog> m_soundBuffer;
-	private float m_totalVolume;
-	private Node m_averageSoundNode;
-
-	[SerializeField] private float m_volumeMaxThreshold;
-	[SerializeField] private float m_volumeMinThreshold;
-
-	[SerializeField] private Transform m_soundLog;
 
 	private Coroutine m_roaringCoroutine;
 	private Coroutine m_growlingCoroutine;
-
-	[SerializeField] private string m_graphTextFileName;
 
 	#endregion
 
@@ -76,104 +68,117 @@ public class CreatureBehaviour : MonoBehaviour
 	private void Start()
 	{
 		GraphModel graphModel = GraphData.LoadGraph(Resources.Load<TextAsset>(m_graphTextFileName));
-		m_navigationGraphNodes = graphModel.Nodes;
 
-		m_currentNode = m_navigationGraphNodes[0];
+		m_nodes = new WeightedNode[graphModel.Nodes.Length];
 
-		m_soundBuffer = new List<SoundLog>();
+		for (int i = 0; i < graphModel.Nodes.Length; i++)
+		{
+			m_nodes[i] = new(graphModel.Nodes[i]);
+		}
+
+		m_currentNode = m_nodes[0];
+		transform.position = m_currentNode.Node.Position;
 
 		m_attackDistanceSquared = m_attackDistance * m_attackDistance;
+
+		m_growlingCoroutine = StartCoroutine(PlayGrowlingSounds());
 	}
 
 	private void Update()
 	{
-		if (!m_isAttackingBeacon)
+		// Lerp node weights back to neutral
+		float nodeWeightFactor = 0.8f * Time.deltaTime;
+
+		foreach (WeightedNode node in m_nodes)
 		{
-			Move();
-			CheckForAttacks();
+			float weightChange = (1 - node.Weight) * nodeWeightFactor;
+			node.Weight += weightChange;
+			m_totalNodeWeight += weightChange;
+		}
+
+		// If currently attacking the beacon then do nothing else
+		if (m_isAttackingBeacon)
+			return;
+
+		// Only move if we're not attacking something
+		if (!CheckForAttacks())
+		{
+			if (m_isOnGraph)
+			{
+				// If we have a target then move towards it
+				if (m_targetNode != null)
+				{
+					UpdatePosition();
+
+					if (m_travelDistance >= m_targetNodeDistance)
+					{
+						// If we've reached the target then set the current node and reset progress
+						m_travelDistance = 0;
+
+						// Reduce target node weight if neutral
+						if (m_targetNode.Weight == 1)
+							m_targetNode.Weight = 0.5f;
+
+						m_currentNode = m_targetNode;
+						transform.position = m_currentNode.Node.Position;
+						m_targetNode = null;
+
+						// If we've reached the node closest to the beacon or player then go off-graph and head directly to them
+						if (m_currentNode == m_beaconNode || m_currentNode == GetNearestNode(m_playerTransform.position))
+						{
+							m_isOnGraph = false;
+							m_roaringCoroutine ??= StartCoroutine(PlayRoaringSounds());
+							return;
+						}
+					}
+					else
+						return;
+				}
+				if (m_currentPath.Count > 0)
+					IterateTarget();
+				else
+					StartNewWander();
+			}
+			else
+			{
+				Vector3 targetPosition;
+
+				if (m_returnToGraph)
+					targetPosition = m_currentNode.Node.Position; // Move back towards where we left the node-based movement
+				else if (m_isBeaconActive)
+					targetPosition = m_beaconPosition; // Move towards beacon
+				else
+					targetPosition = m_playerTransform.position; // Move towards player
+
+				Vector3 targetDirection = targetPosition - transform.position;
+
+				if (m_returnToGraph && targetDirection.sqrMagnitude < 0.1f)
+				{
+					// If moving back to graph and we are close enough to the last node then snap back to graph movement
+
+					m_returnToGraph = false;
+					m_isOnGraph = false;
+
+					transform.position = targetPosition;
+
+					StartNewWander();
+				}
+				else
+				{
+					transform.position += m_travelSpeed * Time.deltaTime * targetDirection.normalized;
+				}
+			}
 		}
 	}
 
 	#endregion
 
-	#region Pathing
-
-	private void Move()
-	{
-		if (IsHunting = m_totalVolume > m_volumeMaxThreshold || (IsHunting && m_totalVolume > m_volumeMinThreshold))
-		{
-			if (m_currentPath.Count > 0 && m_currentPath[^1].Position.Equals(m_averageSoundNode.Position))
-			{
-				if (m_targetNode == null)
-					IncrementTargetNode();
-			}
-			else
-			{
-				if (m_targetNode == null)
-				{
-					m_currentPath = GetShortestPath(m_currentNode, m_averageSoundNode);
-					IncrementTargetNode();
-				}
-				else
-					m_currentPath = GetShortestPath(m_targetNode, m_averageSoundNode);
-			}
-
-			transform.localScale = new Vector3(2, 2, 2);
-
-			m_roaringCoroutine ??= StartCoroutine(PlayRoaringSounds());
-		}
-		else
-		{
-			if (m_targetNode == null)
-			{
-				if (m_currentPath.Count == 0)
-					m_currentPath = GetShortestPath(m_currentNode, m_navigationGraphNodes[UnityEngine.Random.Range(0, m_navigationGraphNodes.Length)], true);
-
-				IncrementTargetNode();
-			}
-
-			transform.localScale = new Vector3(1, 1, 1);
-
-			m_growlingCoroutine ??= StartCoroutine(PlayGrowlingSounds());
-		}
-
-		m_currentTravelDistance += m_travelSpeed * Time.deltaTime;
-
-		if (m_currentTravelDistance >= m_targetNodeDistance)
-		{
-			m_currentNode = m_targetNode;
-			m_targetNode = null;
-			m_currentTravelDistance = 0;
-		}
-
-		if (m_targetNode == null)
-			transform.position = m_currentNode.Position;
-		else
-		{
-			transform.position = m_currentNode.Position + ((m_targetNode.Position - m_currentNode.Position) * (float)(m_currentTravelDistance / m_targetNodeDistance));
-			transform.LookAt(m_targetNode.Position);
-		}
-	}
-
-	private void IncrementTargetNode()
-	{
-		if (m_currentPath.Count > 0)
-		{
-			m_targetNode = m_currentPath[0];
-			m_currentPath.RemoveAt(0);
-
-			m_targetNodeDistance = Vector3.Distance(m_currentNode.Position, m_targetNode.Position);
-		}
-		else
-		{
-			m_currentTravelDistance = 0; // Safety net for when creature is trying to move to its current node
-		}
-	}
+	#region Graph
 
 	// Shortest path between source and destination excluding source node in final path
-	private List<Node> GetShortestPath(Node source, Node destination, bool wandering = false)
+	private List<WeightedNode> GetShortestPath(WeightedNode source, WeightedNode destination)
 	{
-		Node[] nodes = m_navigationGraphNodes;
+		WeightedNode[] nodes = m_nodes;
 
 		if (source == destination)
 			return new();
@@ -184,7 +189,7 @@ public class CreatureBehaviour : MonoBehaviour
 		if (sourceIndex < 0 || destinationIndex < 0)
 			return new();
 
-		List<Node> nodeQueue = new();
+		List<WeightedNode> nodeQueue = new();
 
 		int nodeCount = nodes.Length;
 		bool[] isNodeVisited = new bool[nodeCount];
@@ -204,19 +209,19 @@ public class CreatureBehaviour : MonoBehaviour
 
 		while (nodeQueue.Count != 0)
 		{
-			Node node = nodeQueue[0];
-			int nodeIndex = node.Index;
+			WeightedNode node = nodeQueue[0];
+			int nodeIndex = node.Node.Index;
 
 			nodeQueue.RemoveAt(0);
 
-			List<int> connectionIndexes = node.ConnectionIndexes;
+			List<int> connectionIndexes = node.Node.ConnectionIndexes;
 
 			if (connectionIndexes != null)
 			{
 				for (int i = 0; i < connectionIndexes.Count; i++)
 				{
 					int adjacentIndex = connectionIndexes[i];
-					Node adjacentNode = m_navigationGraphNodes[adjacentIndex];
+					WeightedNode adjacentNode = m_nodes[adjacentIndex];
 
 					if (isNodeVisited[adjacentIndex] == false)
 					{
@@ -227,7 +232,7 @@ public class CreatureBehaviour : MonoBehaviour
 
 						if (adjacentIndex == destinationIndex)
 						{
-							List<Node> shortestPath = new();
+							List<WeightedNode> shortestPath = new();
 
 							int crawlIndex = destinationIndex;
 
@@ -247,20 +252,21 @@ public class CreatureBehaviour : MonoBehaviour
 		return new();
 	}
 
-	private Node GetNearestNode(Vector3 position)
+	// Search through the list of nodes and return the closest one or the first one that is within a tolerance to the given position
+	private WeightedNode GetNearestNode(Vector3 position)
 	{
-		Node nearestNode = m_navigationGraphNodes[0];
-		float nearestDistance = Vector3.SqrMagnitude(position - nearestNode.Position);
+		WeightedNode nearestNode = m_nodes[0];
+		float nearestDistance = Vector3.SqrMagnitude(position - nearestNode.Node.Position);
 
 		if (nearestDistance > m_nodePositionTolerance)
 		{
-			for (int i = 1; i < m_navigationGraphNodes.Length; i++)
+			for (int i = 1; i < m_nodes.Length; i++)
 			{
-				float distance = Vector3.SqrMagnitude(position - m_navigationGraphNodes[i].Position);
+				float distance = Vector3.SqrMagnitude(position - m_nodes[i].Node.Position);
 
 				if (distance < nearestDistance)
 				{
-					nearestNode = m_navigationGraphNodes[i];
+					nearestNode = m_nodes[i];
 
 					if (distance < m_nodePositionTolerance)
 					{
@@ -279,35 +285,153 @@ public class CreatureBehaviour : MonoBehaviour
 
 	#endregion
 
-	#region Attacking
+	#region Moving
 
-	private void CheckForAttacks()
+	// Update the travel distance between nodes and the physical position of the creature
+	private void UpdatePosition()
 	{
-		if (Beacon.Instance != null)
+		Vector3 currentNodeToTargetNode = m_targetNode.Node.Position - m_currentNode.Node.Position;
+		float moveDistance = m_travelSpeed * Time.deltaTime;
+
+		m_travelDistance += moveDistance;
+		transform.position += moveDistance * currentNodeToTargetNode.normalized;
+	}
+
+	// Choose a random node biased by weights and set a path towards it
+	private void StartNewWander()
+	{
+		float randomNodeWeightPoint = UnityEngine.Random.Range(0, m_totalNodeWeight);
+
+		float cumulativeNodeWeight = 0;
+
+		for (int i = 0; i < m_nodes.Length; i++)
 		{
-			Vector3 directionToBeacon = Beacon.Instance.transform.position - transform.position;
+			cumulativeNodeWeight += m_nodes[i].Weight;
 
-			if (Vector3.SqrMagnitude(directionToBeacon) <= m_attackDistanceSquared && Physics.Raycast(new Ray(transform.position, directionToBeacon), out RaycastHit beaconHit) && beaconHit.collider.CompareTag("Beacon"))
+			if (cumulativeNodeWeight >= randomNodeWeightPoint)
 			{
-				Destroy(Beacon.Instance.gameObject);
-				AudioManager.Instance.CreatureAttackBeacon();
-				StartCoroutine(AwaitBeaconAttack());
-			}
-		}
-
-		if (!m_isAttackingBeacon)
-		{
-			Vector3 directionToPlayer = m_playerTransform.position - transform.position;
-
-			if (Vector3.SqrMagnitude(directionToPlayer) <= m_attackDistanceSquared && Physics.Raycast(new Ray(transform.position, directionToPlayer), out RaycastHit playerHit) && playerHit.collider.CompareTag("Player"))
-			{
-				AttackedPlayer.Invoke();
-				AudioManager.Instance.CreatureAttackPlayer();
+				SetPath(m_nodes[i]);
+				break;
 			}
 		}
 	}
 
-	private IEnumerator AwaitBeaconAttack()
+	// Creates and sets the current path to move to the given node
+	private void SetPath(WeightedNode destinationNode)
+	{
+		// Already at the destination
+		if (destinationNode == m_currentNode)
+		{
+			// If we're moving away from the destination then invert everything to turn back towards it
+			if (m_travelDistance > 0)
+			{
+				m_currentNode = m_targetNode;
+				m_targetNode = destinationNode;
+
+				m_travelDistance = m_targetNodeDistance - m_travelDistance;
+				m_targetNodeNormalizedDirection = -m_targetNodeNormalizedDirection;
+			}
+			else
+			{
+				m_targetNode = null;
+
+				// Covers edge-case where the beacon is dropped near the current node exactly at the same time the creature arrives at that node
+				if (m_beaconNode == m_currentNode)
+					m_isOnGraph = false;
+			}
+
+			m_currentPath.Clear();
+		}
+		// Already heading towards the destination
+		else if (destinationNode == m_targetNode)
+		{
+			m_currentPath.Clear();
+		}
+		else
+		{
+			if (m_currentPath.Count > 0)
+			{
+				int index = m_currentPath.IndexOf(destinationNode);
+
+				// Destination is within our current path
+				if (index != -1)
+				{
+					int removeCount = m_currentPath.Count - index - 1;
+
+					// Remove any nodes in the current path after the destination node
+					if (removeCount > 0)
+						m_currentPath.RemoveRange(index + 1, removeCount);
+
+					return;
+				}
+			}
+
+			// Make a new path to the destination node.
+			if (m_targetNode == null)
+			{
+				m_currentPath = GetShortestPath(m_currentNode, destinationNode);
+				IterateTarget();
+			}
+			else
+			{
+				m_currentPath = GetShortestPath(m_targetNode, destinationNode);
+			}
+		}
+	}
+
+	// Iterates the target node to the next node in the path
+	private void IterateTarget()
+	{
+		m_targetNode = m_currentPath[0];
+
+		m_currentPath.RemoveAt(0);
+
+		Vector3 targetNodeDirection = m_targetNode.Node.Position - m_currentNode.Node.Position;
+		m_targetNodeNormalizedDirection = targetNodeDirection.normalized;
+		m_targetNodeDistance = Vector3.Magnitude(targetNodeDirection);
+
+	}
+
+	#endregion
+
+	#region Attacking
+
+	// Returns true if creature is close enough to attack something, otherwise false
+	private bool CheckForAttacks()
+	{
+		if (m_isBeaconActive && Vector3.SqrMagnitude(m_beaconPosition - transform.position) <= m_attackDistanceSquared)
+		{
+			AttackBeacon();
+			return true;
+		}
+		else if (Vector3.SqrMagnitude(m_playerTransform.position - transform.position) <= m_attackDistanceSquared)
+		{
+			AttackedPlayer.Invoke();
+			return true;
+		}
+
+		return false;
+	}
+
+	// Destroys the beacon and heads back to the graph if needed
+	private void AttackBeacon()
+	{
+		Destroy(Beacon.Instance);
+
+		m_isBeaconActive = false;
+
+		m_growlingCoroutine = StartCoroutine(PlayGrowlingSounds());
+
+		if (!m_isOnGraph)
+			m_returnToGraph = true;
+
+		// Reset the beacon node weight as it could be very high
+		m_beaconNode.Weight = 1;
+
+		StartCoroutine(AttackingBeacon());
+	}
+
+	private IEnumerator AttackingBeacon()
 	{
 		m_isAttackingBeacon = true;
 
@@ -320,84 +444,96 @@ public class CreatureBehaviour : MonoBehaviour
 
 	#region Sound Logging
 
-	public void AddSound(Vector3 location, float volume, float duration)
+	// Adds weight to the closest node
+	public void AddSound(Vector3 location, float volume)
 	{
-		SoundLog sound = new(location, volume);
+		WeightedNode closestNode = GetNearestNode(location);
 
-		m_soundBuffer.Add(sound);
-		StartCoroutine(RemoveSound(sound, duration));
+		closestNode.Weight += volume;
+		m_totalNodeWeight += volume;
 
-		UpdateSound();
-	}
+		UpdateGrowlBehaviour();
 
-	private IEnumerator RemoveSound(SoundLog sound, float duration)
-	{
-		yield return new WaitForSeconds(duration);
-
-		m_soundBuffer.Remove(sound);
-
-		UpdateSound();
-	}
-
-	private void UpdateSound()
-	{
-		float aggregateVolume = 0;
-		Vector3 aggregateSoundPosition = Vector3.zero;
-
-		if (m_soundBuffer.Count > 0)
+		if (!m_isBeaconActive)
 		{
-			foreach (SoundLog soundLog in m_soundBuffer)
+			// If above max sound threshold then head directly to sound location
+			if (m_totalNodeWeight > m_maxSoundThreshold)
 			{
-				aggregateVolume += soundLog.Volume;
-				aggregateSoundPosition += soundLog.Source * soundLog.Volume;
+				SetPath(closestNode);
 			}
-
-			m_totalVolume = aggregateVolume;
-			m_averageSoundNode = GetNearestNode(aggregateSoundPosition / aggregateVolume);
-
-			m_soundLog.position = m_averageSoundNode.Position;
+			// If above new wander threshold then start a new wander (to prevent new sounds having no effect when creature is already on a long wander)
+			else if (m_totalNodeWeight > m_newWanderThreshold)
+			{
+				StartNewWander();
+			}
 		}
-		else
-		{
-			m_soundLog.position = new(2000, 0, 0);
-		}
+	}
+
+	// Send the creature to the beacon location
+	public void BeaconDropped()
+	{
+		m_roaringCoroutine ??= StartCoroutine(PlayRoaringSounds());
+
+		m_isBeaconActive = true;
+
+		m_beaconPosition = Beacon.Instance.transform.position;
+		m_beaconNode = GetNearestNode(m_beaconPosition);
+
+		SetPath(m_beaconNode);
 	}
 
 	#endregion
 
 	#region Audio
 
+	// Loop roaring sounds with a small delay until roaring is stopped
 	private IEnumerator PlayRoaringSounds()
 	{
-		while (IsHunting)
+		m_growlingCoroutine = null;
+
+		while (m_growlingCoroutine is null)
 			yield return new WaitForSeconds(AudioManager.Instance.PlayCreatureRoar() + UnityEngine.Random.Range(0.3f, 1f));
 
 		m_roaringCoroutine = null;
 	}
 
+	// Loop growling sounds with a large delay until roaring is started
 	private IEnumerator PlayGrowlingSounds()
 	{
-		while (!IsHunting)
-		{
-			yield return new WaitForSeconds(UnityEngine.Random.Range(10, 15));
+		m_roaringCoroutine = null;
 
-			AudioManager.Instance.PlayCreatureGrowl();
-		}
+		while (m_roaringCoroutine is null)
+			yield return new WaitForSeconds(AudioManager.Instance.PlayCreatureGrowl() + UnityEngine.Random.Range(m_minGrowlDelay, m_maxGrowlDelay));
 
 		m_growlingCoroutine = null;
 	}
 
-	#endregion
-}
-
-readonly struct SoundLog
-{
-	public SoundLog(Vector3 source, float volume)
+	// Updates the growl volume and delays when the total node weight has changed
+	private void UpdateGrowlBehaviour()
 	{
-		Source = source;
-		Volume = volume;
+		TotalVolumeFactor = m_nodes.Length / m_totalNodeWeight;
+
+		AudioManager.Instance.SetCreatureGrowlVolume(TotalVolumeFactor);
+
+		m_minGrowlDelay = 5 + (10 * TotalVolumeFactor);
+		m_maxGrowlDelay = m_minGrowlDelay * 1.5f;
 	}
 
-	public readonly Vector3 Source;
-	public readonly float Volume;
+	#endregion
+
+	#region Nested Classes
+
+	class WeightedNode
+	{
+		public Node Node;
+		public float Weight;
+
+		public WeightedNode(Node node)
+		{
+			Node = node;
+			Weight = 0;
+		}
+	}
+
+	#endregion
 }
