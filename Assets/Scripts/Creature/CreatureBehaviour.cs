@@ -12,13 +12,12 @@ public class CreatureBehaviour : MonoBehaviour
 	[SerializeField] private string m_graphTextFileName;
 
 	private WeightedNode[] m_nodes;
+	private KDTree m_tree;
 
 	private List<WeightedNode> m_currentPath = new();
 	private WeightedNode m_currentNode;
 	private WeightedNode m_targetNode;
 	private Vector3 m_targetNodeNormalizedDirection;
-
-	[SerializeField] private float m_nodePositionTolerance;
 
 	private bool m_isOnGraph = true;
 	private bool m_returnToGraph;
@@ -76,6 +75,8 @@ public class CreatureBehaviour : MonoBehaviour
 			m_nodes[i] = new(graphModel.Nodes[i]);
 		}
 
+		m_tree = new(m_nodes);
+
 		m_totalNodeWeight = m_nodes.Length;
 
 		m_currentNode = m_nodes[0];
@@ -131,7 +132,7 @@ public class CreatureBehaviour : MonoBehaviour
 						m_targetNode = null;
 
 						// If we've reached the node closest to the beacon or player then go off-graph and head directly to them
-						if (m_currentNode == m_beaconNode || m_currentNode == GetNearestNode(m_playerTransform.position))
+						if (m_currentNode == m_beaconNode || m_currentNode == m_tree.GetNearestNode(m_playerTransform.position))
 						{
 							m_isOnGraph = false;
 							m_roaringCoroutine ??= StartCoroutine(PlayRoaringSounds());
@@ -257,37 +258,6 @@ public class CreatureBehaviour : MonoBehaviour
 		}
 
 		return new();
-	}
-
-	// Search through the list of nodes and return the closest one or the first one that is within a tolerance to the given position
-	private WeightedNode GetNearestNode(Vector3 position)
-	{
-		WeightedNode nearestNode = m_nodes[0];
-		float nearestDistance = Vector3.SqrMagnitude(position - nearestNode.Node.Position);
-
-		if (nearestDistance > m_nodePositionTolerance)
-		{
-			for (int i = 1; i < m_nodes.Length; i++)
-			{
-				float distance = Vector3.SqrMagnitude(position - m_nodes[i].Node.Position);
-
-				if (distance < nearestDistance)
-				{
-					nearestNode = m_nodes[i];
-
-					if (distance < m_nodePositionTolerance)
-					{
-						break;
-					}
-					else
-					{
-						nearestDistance = distance;
-					}
-				}
-			}
-		}
-
-		return nearestNode;
 	}
 
 	#endregion
@@ -455,7 +425,7 @@ public class CreatureBehaviour : MonoBehaviour
 	// Adds weight to the closest node
 	public void AddSound(Vector3 location, float volume)
 	{
-		WeightedNode closestNode = GetNearestNode(location);
+		WeightedNode closestNode = m_tree.GetNearestNode(location);
 
 		closestNode.Weight += volume;
 		m_totalNodeWeight += volume;
@@ -485,7 +455,7 @@ public class CreatureBehaviour : MonoBehaviour
 		m_isBeaconActive = true;
 
 		m_beaconPosition = Beacon.Instance.transform.position;
-		m_beaconNode = GetNearestNode(m_beaconPosition);
+		m_beaconNode = m_tree.GetNearestNode(m_beaconPosition);
 
 		SetPath(m_beaconNode);
 	}
@@ -531,7 +501,7 @@ public class CreatureBehaviour : MonoBehaviour
 
 	#region Nested Classes
 
-	class WeightedNode
+	private class WeightedNode
 	{
 		#region Construction
 
@@ -592,6 +562,109 @@ public class CreatureBehaviour : MonoBehaviour
 
 			m_weight -= weightChange;
 			return -weightChange;
+		}
+
+		#endregion
+	}
+
+	private class KDTree
+	{
+		#region Construction
+
+		public KDTree(WeightedNode[] nodes)
+		{
+			for (int i = 0; i < nodes.Length; i++)
+			{
+				m_rootNode = InsertNode(m_rootNode, new TreeNode(nodes[i]));
+			}
+		}
+
+		#endregion
+
+		#region Variables
+
+		private const int s_k = 3;
+
+		private readonly TreeNode m_rootNode;
+
+		#endregion
+
+		#region Implementation
+
+		// Adds the given node into the tree
+		private TreeNode InsertNode(TreeNode rootNode, TreeNode insertingNode)
+		{
+			return InsertRecursive(rootNode, insertingNode, 0);
+		}
+
+		// Traverses down the tree to insert the node in the correct place
+		private TreeNode InsertRecursive(TreeNode rootNode, TreeNode insertingNode, int depth)
+		{
+			if (rootNode is null)
+				return insertingNode;
+
+			int dimension = depth % s_k;
+
+			if (insertingNode.Node.Node.Position[dimension] < rootNode.Node.Node.Position[dimension])
+				rootNode.Left = InsertRecursive(rootNode.Left, insertingNode, depth + 1);
+			else
+				rootNode.Right = InsertRecursive(rootNode.Right, insertingNode, depth + 1);
+
+			return rootNode;
+		}
+
+		// Finds the nearest node to the given position.
+		public WeightedNode GetNearestNode(Vector3 position)
+		{
+			return SearchRecursive(m_rootNode, position, 0, null, float.MaxValue).Node.Node;
+		}
+
+		// Recursively moves down the tree by comparing to the given position until it reaches a leaf node, backtracks to find the closest node
+		private (TreeNode Node, float Distance) SearchRecursive(TreeNode currentNode, Vector3 position, int depth, TreeNode bestNode, float bestDistance)
+		{
+			// Reached a leaf node so start backtracking.
+			if (currentNode is null)
+				return (bestNode, bestDistance);
+
+			float distance = Vector3.SqrMagnitude(position - currentNode.Node.Node.Position);
+
+			// If the current node is closer than our best then change the best to current.
+			if (distance < bestDistance)
+			{
+				bestNode = currentNode;
+				bestDistance = distance;
+			}
+
+			int axis = depth % s_k;
+
+			// Decides which direction to go by comparing the position in the determined axis
+			bool goLeft = position[axis] < currentNode.Node.Node.Position[axis];
+
+			(bestNode, bestDistance) = SearchRecursive(goLeft ? currentNode.Left : currentNode.Right, position, depth + 1, bestNode, bestDistance);
+
+			float dimensionDistance = Mathf.Pow(position[axis] - currentNode.Node.Node.Position[axis], 2);
+
+			// If the distance in the single axis is closer than the current best distance then we should explore the other direction
+			if (dimensionDistance < bestDistance)
+				(bestNode, bestDistance) = SearchRecursive(goLeft ? currentNode.Right : currentNode.Left, position, depth + 1, bestNode, bestDistance);
+
+			return (bestNode, bestDistance);
+		}
+
+		#endregion
+
+		#region Nested Classes
+
+		private class TreeNode
+		{
+			public readonly WeightedNode Node;
+			public TreeNode Left = null;
+			public TreeNode Right = null;
+
+			public TreeNode(WeightedNode node)
+			{
+				Node = node;
+			}
 		}
 
 		#endregion
