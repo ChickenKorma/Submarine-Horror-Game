@@ -11,6 +11,7 @@ public class UIManager : MonoBehaviour
 
 	[SerializeField] private GameObject m_gameOverScreen;
 	[SerializeField] private GameObject m_gameWonScreen;
+	[SerializeField] private GameObject m_pauseScreen;
 
 	[Header("Sonar Use Indicator")]
 	[SerializeField] private Color m_red;
@@ -86,6 +87,8 @@ public class UIManager : MonoBehaviour
 
 		Sonar.Instance.PingStateChanged += UpdateSonarIndicator;
 		Sonar.Instance.BeaconInputHold += UpdateBeaconIndicator;
+
+		InputManager.Instance.PauseEvent += TogglePauseScreen;
 	}
 
 	private void OnDisable()
@@ -96,6 +99,8 @@ public class UIManager : MonoBehaviour
 
 		Sonar.Instance.PingStateChanged -= UpdateSonarIndicator;
 		Sonar.Instance.BeaconInputHold -= UpdateBeaconIndicator;
+
+		InputManager.Instance.PauseEvent -= TogglePauseScreen;
 	}
 
 	#endregion
@@ -104,16 +109,17 @@ public class UIManager : MonoBehaviour
 
 	private void GameOver()
 	{
-		m_inGame = false;
 		m_gameOverScreen.SetActive(true);
-		Time.timeScale = 0;
 	}
 
 	private void GameWon()
 	{
-		m_inGame = false;
 		m_gameWonScreen.SetActive(true);
-		Time.timeScale = 0;
+	}
+
+	public void TogglePauseScreen()
+	{
+		m_pauseScreen.SetActive(GameManager.Instance.IsPaused);
 	}
 
 	#endregion
@@ -144,7 +150,6 @@ public class UIManager : MonoBehaviour
 	{
 		while (m_inGame)
 		{
-			// Wrong!! Check similar lines using total volume factor
 			float creatureIndicatorFlashSpeed = m_creatureMaxFlashSpeed - (CreatureBehaviour.Instance.TotalVolumeFactor * (m_creatureMaxFlashSpeed - m_creatureMinFlashSpeed));
 			m_creatureIndicatorAnimator.speed = creatureIndicatorFlashSpeed;
 

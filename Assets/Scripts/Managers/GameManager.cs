@@ -7,6 +7,8 @@ public class GameManager : MonoBehaviour
 
 	public static GameManager Instance { get; private set; }
 
+	public bool IsPaused { get; private set; }
+
 	#endregion
 
 	#region Unity
@@ -17,6 +19,24 @@ public class GameManager : MonoBehaviour
 			Destroy(this);
 		else
 			Instance = this;
+	}
+
+	private void OnEnable()
+	{
+		CreatureBehaviour.Instance.AttackedPlayer += PauseTime;
+
+		ExitDetection.Instance.GameWon += PauseTime;
+
+		InputManager.Instance.PauseEvent += TogglePause;
+	}
+
+	private void OnDisable()
+	{
+		CreatureBehaviour.Instance.AttackedPlayer -= PauseTime;
+
+		ExitDetection.Instance.GameWon -= PauseTime;
+
+		InputManager.Instance.PauseEvent -= TogglePause;
 	}
 
 	#endregion
@@ -32,6 +52,17 @@ public class GameManager : MonoBehaviour
 	public void QuitGame()
 	{
 		Application.Quit();
+	}
+
+	public void TogglePause()
+	{
+		IsPaused = !IsPaused;
+		Time.timeScale = IsPaused ? 0 : 1;
+	}
+
+	private void PauseTime()
+	{
+		Time.timeScale = 0;
 	}
 
 	#endregion

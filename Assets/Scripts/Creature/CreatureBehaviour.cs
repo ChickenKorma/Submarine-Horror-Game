@@ -76,6 +76,8 @@ public class CreatureBehaviour : MonoBehaviour
 			m_nodes[i] = new(graphModel.Nodes[i]);
 		}
 
+		m_totalNodeWeight = m_nodes.Length;
+
 		m_currentNode = m_nodes[0];
 		transform.position = m_currentNode.Node.Position;
 
@@ -88,14 +90,15 @@ public class CreatureBehaviour : MonoBehaviour
 	private void Update()
 	{
 		// Lerp node weights back to neutral
-		float nodeWeightFactor = 0.8f * Time.deltaTime;
+		float time = Time.time;
+		float deltaTime = Time.deltaTime;
 
 		foreach (WeightedNode node in m_nodes)
 		{
-			float weightChange = (1 - node.Weight) * nodeWeightFactor;
-			node.Weight += weightChange;
-			m_totalNodeWeight += weightChange;
+			m_totalNodeWeight += node.NeutralizeWeight(time, deltaTime);
 		}
+
+		UpdateGrowlBehaviour();
 
 		// If currently attacking the beacon then do nothing else
 		if (m_isAttackingBeacon)
@@ -117,8 +120,11 @@ public class CreatureBehaviour : MonoBehaviour
 						m_travelDistance = 0;
 
 						// Reduce target node weight if neutral
-						if (m_targetNode.Weight == 1)
-							m_targetNode.Weight = 0.5f;
+						if (Mathf.Abs(1 - m_targetNode.Weight) < 0.01f)
+						{
+							m_targetNode.Weight -= 0.5f;
+							m_totalNodeWeight -= 0.5f;
+						}
 
 						m_currentNode = m_targetNode;
 						transform.position = m_currentNode.Node.Position;
@@ -427,6 +433,7 @@ public class CreatureBehaviour : MonoBehaviour
 			m_returnToGraph = true;
 
 		// Reset the beacon node weight as it could be very high
+		m_totalNodeWeight -= m_beaconNode.Weight - 1;
 		m_beaconNode.Weight = 1;
 
 		StartCoroutine(AttackingBeacon());
@@ -526,14 +533,68 @@ public class CreatureBehaviour : MonoBehaviour
 
 	class WeightedNode
 	{
-		public Node Node;
-		public float Weight;
+		#region Construction
 
 		public WeightedNode(Node node)
 		{
 			Node = node;
-			Weight = 0;
+			Weight = 1;
 		}
+
+		#endregion
+
+		#region Variables
+
+		public Node Node;
+
+		public float Weight
+		{
+			get => m_weight;
+			set
+			{
+				m_changeTime = Time.time;
+				m_startingDifference = value - 1;
+
+				m_weight = value;
+			}
+		}
+
+		private float m_weight;
+
+		private float m_changeTime;
+		private float m_startingDifference;
+
+		private const float s_changeFactor = 1.9E-6f;
+
+		#endregion
+
+		#region Implementation
+
+		// Uses cubic ease out curve to reduce the node weight back to 1
+		public float NeutralizeWeight(float time, float deltaTime)
+		{
+			if (Weight == 1)
+				return 0;
+
+			float currentDifference = Weight - 1;
+			float absCurrentDifference = Mathf.Abs(currentDifference);
+
+			if (absCurrentDifference < 0.01f)
+			{
+				Weight -= currentDifference;
+				return -currentDifference;
+			}
+
+			float timeSinceChange = time - m_changeTime;
+
+			float weightChange = m_startingDifference * s_changeFactor * Mathf.Pow(timeSinceChange, 3) * deltaTime;
+			weightChange = Mathf.Clamp(weightChange, -absCurrentDifference, absCurrentDifference);
+
+			m_weight -= weightChange;
+			return -weightChange;
+		}
+
+		#endregion
 	}
 
 	#endregion

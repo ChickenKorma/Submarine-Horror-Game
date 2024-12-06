@@ -23,6 +23,8 @@ public class InputManager : MonoBehaviour
 	public Action<Vector3> MoveEvent = delegate { };
 	public Action<Vector2> LookEvent = delegate { };
 
+	public Action PauseEvent = delegate { };
+
 	private PlayerInputActions m_playerInputActions;
 
 	#endregion
@@ -60,6 +62,8 @@ public class InputManager : MonoBehaviour
 		m_playerInputActions.Gameplay.Look.started += OnLook;
 		m_playerInputActions.Gameplay.Look.performed += OnLook;
 		m_playerInputActions.Gameplay.Look.canceled += OnLook;
+
+		m_playerInputActions.Gameplay.Pause.performed += OnPause;
 	}
 
 	private void OnDisable()
@@ -81,6 +85,8 @@ public class InputManager : MonoBehaviour
 		m_playerInputActions.Gameplay.Look.started -= OnLook;
 		m_playerInputActions.Gameplay.Look.performed -= OnLook;
 		m_playerInputActions.Gameplay.Look.canceled -= OnLook;
+
+		m_playerInputActions.Gameplay.Pause.performed -= OnPause;
 	}
 
 	#endregion
@@ -113,6 +119,8 @@ public class InputManager : MonoBehaviour
 	private void OnMove(InputAction.CallbackContext context) => MoveEvent.Invoke(context.ReadValue<Vector3>());
 
 	private void OnLook(InputAction.CallbackContext context) => LookEvent.Invoke(context.ReadValue<Vector2>());
+
+	private void OnPause(InputAction.CallbackContext context) => PauseEvent.Invoke();
 
 	#endregion
 }
