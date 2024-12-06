@@ -28,7 +28,7 @@ public class CreatureBehaviour : MonoBehaviour
 	private float m_maxSoundThreshold;
 	private float m_newWanderThreshold;
 
-	public float TotalVolumeFactor { get; private set; }
+	public float TotalVolumeFactor { get; private set; } = 1;
 
 	private float m_minGrowlDelay;
 	private float m_maxGrowlDelay;
@@ -81,6 +81,7 @@ public class CreatureBehaviour : MonoBehaviour
 
 		m_attackDistanceSquared = m_attackDistance * m_attackDistance;
 
+		UpdateGrowlBehaviour();
 		m_growlingCoroutine = StartCoroutine(PlayGrowlingSounds());
 	}
 

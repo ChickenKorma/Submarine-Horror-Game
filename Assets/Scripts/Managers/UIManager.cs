@@ -144,6 +144,7 @@ public class UIManager : MonoBehaviour
 	{
 		while (m_inGame)
 		{
+			// Wrong!! Check similar lines using total volume factor
 			float creatureIndicatorFlashSpeed = m_creatureMaxFlashSpeed - (CreatureBehaviour.Instance.TotalVolumeFactor * (m_creatureMaxFlashSpeed - m_creatureMinFlashSpeed));
 			m_creatureIndicatorAnimator.speed = creatureIndicatorFlashSpeed;
 
