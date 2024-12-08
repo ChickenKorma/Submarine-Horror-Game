@@ -165,7 +165,7 @@ public class CreatureBehaviour : MonoBehaviour
 					// If moving back to graph and we are close enough to the last node then snap back to graph movement
 
 					m_returnToGraph = false;
-					m_isOnGraph = false;
+					m_isOnGraph = true;
 
 					transform.position = targetPosition;
 
@@ -393,7 +393,7 @@ public class CreatureBehaviour : MonoBehaviour
 	// Destroys the beacon and heads back to the graph if needed
 	private void AttackBeacon()
 	{
-		Destroy(Beacon.Instance);
+		Destroy(Beacon.Instance.gameObject);
 
 		m_isBeaconActive = false;
 

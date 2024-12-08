@@ -22,6 +22,7 @@ public class UIManager : MonoBehaviour
 
 	[Header("Beacon Use Indicator")]
 	[SerializeField] private Slider m_beaconInputSlider;
+	[SerializeField] private TMP_Text m_beaconsRemainingText;
 
 	[Header("Motion Detector")]
 	[SerializeField] private Transform m_creatureTransform;
@@ -87,6 +88,7 @@ public class UIManager : MonoBehaviour
 
 		Sonar.Instance.PingStateChanged += UpdateSonarIndicator;
 		Sonar.Instance.BeaconInputHold += UpdateBeaconIndicator;
+		Sonar.Instance.BeaconsRemainingChanged += UpdateBeaconsRemaining;
 
 		InputManager.Instance.PauseEvent += TogglePauseScreen;
 	}
@@ -99,6 +101,7 @@ public class UIManager : MonoBehaviour
 
 		Sonar.Instance.PingStateChanged -= UpdateSonarIndicator;
 		Sonar.Instance.BeaconInputHold -= UpdateBeaconIndicator;
+		Sonar.Instance.BeaconsRemainingChanged -= UpdateBeaconsRemaining;
 
 		InputManager.Instance.PauseEvent -= TogglePauseScreen;
 	}
@@ -141,6 +144,8 @@ public class UIManager : MonoBehaviour
 	}
 
 	private void UpdateBeaconIndicator(float holdProgress) => m_beaconInputSlider.value = holdProgress;
+
+	private void UpdateBeaconsRemaining(int beaconsRemaining) => m_beaconsRemainingText.text = $"{beaconsRemaining} left";
 
 	#endregion
 

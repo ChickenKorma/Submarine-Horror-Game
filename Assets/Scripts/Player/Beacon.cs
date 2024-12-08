@@ -53,7 +53,11 @@ public class Beacon : MonoBehaviour
 		}
 	}
 
-	private void OnDestroy() => Destroy(m_lastPing);
+	private void OnDestroy()
+	{
+		if (m_lastPing?.gameObject != null)
+			Destroy(m_lastPing.gameObject);
+	}
 
 	#endregion
 }

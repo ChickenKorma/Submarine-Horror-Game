@@ -9,6 +9,7 @@ public class Sonar : MonoBehaviour
 
 	public Action<bool> PingStateChanged = delegate { };
 	public Action<float> BeaconInputHold = delegate { };
+	public Action<int> BeaconsRemainingChanged = delegate { };
 
 	[SerializeField] private GameObject m_pingEmitterPrefab;
 	[SerializeField] private GameObject m_beaconPrefab;
@@ -27,7 +28,8 @@ public class Sonar : MonoBehaviour
 	private float m_lastPingInput = -10000;
 
 	private Ping m_lastPing;
-	private GameObject m_lastBeacon;
+
+	private int m_beaconsRemaining = 5;
 
 	#endregion
 
@@ -63,7 +65,7 @@ public class Sonar : MonoBehaviour
 		else if (Time.time <= m_lastPingInput + m_pingHold)
 			Ping();
 
-		if (m_lastBeacon == null && m_beaconInputHeld)
+		if (m_beaconInputHeld && m_beaconsRemaining > 0 && Beacon.Instance == null)
 		{
 			m_beaconInputHoldProgress += m_beaconInputHoldSpeed * Time.deltaTime;
 			BeaconInputHold.Invoke(m_beaconInputHoldProgress);
@@ -71,6 +73,10 @@ public class Sonar : MonoBehaviour
 			if (m_beaconInputHoldProgress >= 1)
 			{
 				DropBeacon();
+
+				m_beaconsRemaining--;
+				BeaconsRemainingChanged.Invoke(m_beaconsRemaining);
+
 				m_beaconInputHoldProgress = 0;
 				BeaconInputHold.Invoke(m_beaconInputHoldProgress);
 			}
@@ -110,7 +116,9 @@ public class Sonar : MonoBehaviour
 
 	private void DropBeacon()
 	{
-		m_lastBeacon = Instantiate(m_beaconPrefab, transform.position, Quaternion.identity);
+		Instantiate(m_beaconPrefab, transform.position, Quaternion.identity);
+
+		CreatureBehaviour.Instance.BeaconDropped();
 
 		AudioManager.Instance.PlayBeaconRelease();
 	}
