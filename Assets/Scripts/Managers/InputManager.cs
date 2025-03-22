@@ -10,8 +10,6 @@ public class InputManager : MonoBehaviour
 
 	public PlayerInput PlayerInput;
 
-	public ControlScheme CurrentControlScheme;
-
 	// Device management
 	public Action DeviceChangedEvent = delegate { };
 
@@ -41,12 +39,12 @@ public class InputManager : MonoBehaviour
 
 	private void OnEnable()
 	{
-		// Device management
-		UpdateControlScheme();
-		PlayerInput.onControlsChanged += OnDeviceChanged;
-
 		m_playerInputActions = new PlayerInputActions();
+		m_playerInputActions.Global.Enable();
 		m_playerInputActions.Gameplay.Enable();
+
+		// Global actions
+		m_playerInputActions.Global.Pause.performed += OnPause;
 
 		// Gameplay actions
 		m_playerInputActions.Gameplay.Ping.performed += OnPing;
@@ -62,14 +60,12 @@ public class InputManager : MonoBehaviour
 		m_playerInputActions.Gameplay.Look.started += OnLook;
 		m_playerInputActions.Gameplay.Look.performed += OnLook;
 		m_playerInputActions.Gameplay.Look.canceled += OnLook;
-
-		m_playerInputActions.Gameplay.Pause.performed += OnPause;
 	}
 
 	private void OnDisable()
 	{
-		// Device management
-		PlayerInput.onControlsChanged -= OnDeviceChanged;
+		// Global actions
+		m_playerInputActions.Global.Pause.performed -= OnPause;
 
 		// Gameplay actions
 		m_playerInputActions.Gameplay.Ping.performed -= OnPing;
@@ -85,49 +81,31 @@ public class InputManager : MonoBehaviour
 		m_playerInputActions.Gameplay.Look.started -= OnLook;
 		m_playerInputActions.Gameplay.Look.performed -= OnLook;
 		m_playerInputActions.Gameplay.Look.canceled -= OnLook;
-
-		m_playerInputActions.Gameplay.Pause.performed -= OnPause;
 	}
-
-	#endregion
-
-	#region Control Schemes
-
-	private void UpdateControlScheme()
-	{
-		CurrentControlScheme = PlayerInput.currentControlScheme switch
-		{
-			"KBM" => ControlScheme.KeyboardAndMouse,
-			"Gamepad" => ControlScheme.Gamepad,
-			_ => ControlScheme.KeyboardAndMouse,
-		};
-
-		DeviceChangedEvent.Invoke();
-	}
-
-	private void OnDeviceChanged(PlayerInput _) => UpdateControlScheme();
 
 	#endregion
 
 	#region Controls
 
+	// Global
+	private void OnPause(InputAction.CallbackContext context) => PauseEvent.Invoke();
+
+	// Gameplay
 	private void OnPing(InputAction.CallbackContext context) => PingEvent.Invoke();
 
-	// Invokes as true when the player starts to hold it, and invokes as false if they release.
-	private void OnBeaconHold(InputAction.CallbackContext context) => BeaconHoldEvent.Invoke(!context.canceled);
+	private void OnBeaconHold(InputAction.CallbackContext context) => BeaconHoldEvent.Invoke(!context.canceled); // Invokes as true when the player starts to hold it, and invokes as false if they release.
 
 	private void OnMove(InputAction.CallbackContext context) => MoveEvent.Invoke(context.ReadValue<Vector3>());
 
 	private void OnLook(InputAction.CallbackContext context) => LookEvent.Invoke(context.ReadValue<Vector2>());
 
-	private void OnPause(InputAction.CallbackContext context) => PauseEvent.Invoke();
+	#endregion
+
+	#region Action Maps
+
+	public void EnableGameplayControls() => m_playerInputActions?.Gameplay.Enable();
+
+	public void DisableGameplayControls() => m_playerInputActions?.Gameplay.Disable();
 
 	#endregion
 }
-
-public enum ControlScheme
-{
-	KeyboardAndMouse,
-	Gamepad
-}
-

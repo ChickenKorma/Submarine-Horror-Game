@@ -9,6 +9,7 @@ public class UIManager : MonoBehaviour
 
 	private bool m_inGame = true;
 
+	[Header("Screens")]
 	[SerializeField] private GameObject m_gameOverScreen;
 	[SerializeField] private GameObject m_gameWonScreen;
 	[SerializeField] private GameObject m_pauseScreen;
@@ -33,6 +34,8 @@ public class UIManager : MonoBehaviour
 
 	[SerializeField] private RectTransform m_creatureIndicatorTransform;
 	[SerializeField] private RectTransform m_beaconIndicatorTransform;
+	[SerializeField] private RectTransform m_exitIndicatorTransform;
+
 	private Animator m_creatureIndicatorAnimator;
 	private Animator m_beaconIndicatorAnimator;
 
@@ -42,8 +45,6 @@ public class UIManager : MonoBehaviour
 	[SerializeField] private float m_creatureMinFlashSpeed;
 	[SerializeField] private float m_creatureMaxFlashSpeed;
 	[SerializeField] private float m_beaconFlashSpeed;
-
-	[SerializeField] private RectTransform m_exitIndicatorTransform;
 
 	private static Vector2 s_motionIndicatorPositionOffset = new(-100, 100);
 

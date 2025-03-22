@@ -52,6 +52,8 @@ public class CreatureBehaviour : MonoBehaviour
 	private Coroutine m_roaringCoroutine;
 	private Coroutine m_growlingCoroutine;
 
+	private bool m_gameOver;
+
 	#endregion
 
 	#region Unity
@@ -90,6 +92,9 @@ public class CreatureBehaviour : MonoBehaviour
 
 	private void Update()
 	{
+		if (m_gameOver)
+			return;
+
 		// Lerp node weights back to neutral
 		float time = Time.time;
 		float deltaTime = Time.deltaTime;
@@ -384,6 +389,7 @@ public class CreatureBehaviour : MonoBehaviour
 		else if (Vector3.SqrMagnitude(m_playerTransform.position - transform.position) <= m_attackDistanceSquared)
 		{
 			AttackedPlayer.Invoke();
+			m_gameOver = true;
 			return true;
 		}
 

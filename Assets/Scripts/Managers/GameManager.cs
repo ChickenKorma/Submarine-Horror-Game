@@ -1,5 +1,4 @@
 using UnityEngine;
-using UnityEngine.SceneManagement;
 
 public class GameManager : MonoBehaviour
 {
@@ -8,6 +7,10 @@ public class GameManager : MonoBehaviour
 	public static GameManager Instance { get; private set; }
 
 	public bool IsPaused { get; private set; }
+
+	private GameState m_gameState;
+
+	private float m_oldTimeScale = 1;
 
 	#endregion
 
@@ -23,18 +26,18 @@ public class GameManager : MonoBehaviour
 
 	private void OnEnable()
 	{
-		CreatureBehaviour.Instance.AttackedPlayer += PauseTime;
+		CreatureBehaviour.Instance.AttackedPlayer += EndGame;
 
-		ExitDetection.Instance.GameWon += PauseTime;
+		ExitDetection.Instance.GameWon += EndGame;
 
 		InputManager.Instance.PauseEvent += TogglePause;
 	}
 
 	private void OnDisable()
 	{
-		CreatureBehaviour.Instance.AttackedPlayer -= PauseTime;
+		CreatureBehaviour.Instance.AttackedPlayer -= EndGame;
 
-		ExitDetection.Instance.GameWon -= PauseTime;
+		ExitDetection.Instance.GameWon -= EndGame;
 
 		InputManager.Instance.PauseEvent -= TogglePause;
 	}
@@ -43,26 +46,60 @@ public class GameManager : MonoBehaviour
 
 	#region Implementation
 
-	public void LoadScene(int sceneBuildIndex)
-	{
-		Time.timeScale = 1;
-		SceneManager.LoadScene(sceneBuildIndex);
-	}
-
-	public void QuitGame()
-	{
-		Application.Quit();
-	}
-
 	public void TogglePause()
 	{
-		IsPaused = !IsPaused;
-		Time.timeScale = IsPaused ? 0 : 1;
+		switch (m_gameState)
+		{
+			case GameState.Paused:
+				m_gameState = GameState.Playing;
+				InputManager.Instance.EnableGameplayControls();
+
+				IsPaused = false;
+				UpdateTimeScale();
+				break;
+
+			case GameState.Playing:
+				m_gameState = GameState.Paused;
+				InputManager.Instance.DisableGameplayControls();
+
+				IsPaused = true;
+				UpdateTimeScale();
+				break;
+
+			case GameState.GameOver:
+				IsPaused = false;
+				break;
+		}
 	}
 
-	private void PauseTime()
+	private void UpdateTimeScale()
 	{
+		if (IsPaused)
+		{
+			m_oldTimeScale = Time.timeScale;
+			Time.timeScale = 0;
+		}
+		else
+			Time.timeScale = m_oldTimeScale;
+	}
+
+	private void EndGame()
+	{
+		m_gameState = GameState.GameOver;
+		InputManager.Instance.DisableGameplayControls();
+
 		Time.timeScale = 0;
+	}
+
+	#endregion
+
+	#region Enums
+
+	private enum GameState
+	{
+		Playing,
+		Paused,
+		GameOver
 	}
 
 	#endregion
