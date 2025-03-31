@@ -10,6 +10,7 @@ public class CreatureBehaviour : MonoBehaviour
 	public static CreatureBehaviour Instance { get; private set; }
 
 	[SerializeField] private string m_graphTextFileName;
+	[SerializeField] private int m_startingNodeIndex;
 
 	private WeightedNode[] m_nodes;
 	private KDTree m_tree;
@@ -24,8 +25,9 @@ public class CreatureBehaviour : MonoBehaviour
 	private bool m_isBeaconActive;
 
 	private float m_totalNodeWeight;
-	private float m_maxSoundThreshold;
-	private float m_newWanderThreshold;
+
+	[SerializeField] private float m_detectionThreshold;
+	[SerializeField] private float m_newWanderThreshold;
 
 	public float TotalVolumeFactor { get; private set; } = 1;
 
@@ -81,7 +83,7 @@ public class CreatureBehaviour : MonoBehaviour
 
 		m_totalNodeWeight = m_nodes.Length;
 
-		m_currentNode = m_nodes[0];
+		m_currentNode = m_nodes[m_startingNodeIndex];
 		transform.position = m_currentNode.Node.Position;
 
 		m_attackDistanceSquared = m_attackDistance * m_attackDistance;
@@ -100,9 +102,7 @@ public class CreatureBehaviour : MonoBehaviour
 		float deltaTime = Time.deltaTime;
 
 		foreach (WeightedNode node in m_nodes)
-		{
-			m_totalNodeWeight += node.NeutralizeWeight(time, deltaTime);
-		}
+			ChangeNodeWeight(node, node.GetWeightChangeToNeutralize(time, deltaTime));
 
 		UpdateGrowlBehaviour();
 
@@ -127,10 +127,7 @@ public class CreatureBehaviour : MonoBehaviour
 
 						// Reduce target node weight if neutral
 						if (Mathf.Abs(1 - m_targetNode.Weight) < 0.01f)
-						{
-							m_targetNode.Weight -= 0.5f;
-							m_totalNodeWeight -= 0.5f;
-						}
+							ChangeNodeWeight(m_targetNode, -0.5f);
 
 						m_currentNode = m_targetNode;
 						transform.position = m_currentNode.Node.Position;
@@ -409,8 +406,7 @@ public class CreatureBehaviour : MonoBehaviour
 			m_returnToGraph = true;
 
 		// Reset the beacon node weight as it could be very high
-		m_totalNodeWeight -= m_beaconNode.Weight - 1;
-		m_beaconNode.Weight = 1;
+		SetNodeWeight(m_beaconNode, 1);
 
 		StartCoroutine(AttackingBeacon());
 	}
@@ -433,15 +429,14 @@ public class CreatureBehaviour : MonoBehaviour
 	{
 		WeightedNode closestNode = m_tree.GetNearestNode(location);
 
-		closestNode.Weight += volume;
-		m_totalNodeWeight += volume;
+		ChangeNodeWeight(closestNode, volume);
 
 		UpdateGrowlBehaviour();
 
 		if (!m_isBeaconActive)
 		{
-			// If above max sound threshold then head directly to sound location
-			if (m_totalNodeWeight > m_maxSoundThreshold)
+			// If above detection threshold then head directly to sound location
+			if (m_totalNodeWeight > m_detectionThreshold)
 			{
 				SetPath(closestNode);
 			}
@@ -464,6 +459,19 @@ public class CreatureBehaviour : MonoBehaviour
 		m_beaconNode = m_tree.GetNearestNode(m_beaconPosition);
 
 		SetPath(m_beaconNode);
+	}
+
+	private void ChangeNodeWeight(WeightedNode node, float weightChange)
+	{
+		node.Weight += weightChange;
+		m_totalNodeWeight += weightChange;
+	}
+
+	private void SetNodeWeight(WeightedNode node, float newWeight)
+	{
+		float oldWeight = node.Weight;
+		node.Weight = newWeight;
+		m_totalNodeWeight += newWeight - oldWeight;
 	}
 
 	#endregion
@@ -547,7 +555,7 @@ public class CreatureBehaviour : MonoBehaviour
 		#region Implementation
 
 		// Uses cubic ease out curve to reduce the node weight back to 1
-		public float NeutralizeWeight(float time, float deltaTime)
+		public float GetWeightChangeToNeutralize(float time, float deltaTime)
 		{
 			if (Weight == 1)
 				return 0;
@@ -556,18 +564,12 @@ public class CreatureBehaviour : MonoBehaviour
 			float absCurrentDifference = Mathf.Abs(currentDifference);
 
 			if (absCurrentDifference < 0.01f)
-			{
-				Weight -= currentDifference;
 				return -currentDifference;
-			}
 
 			float timeSinceChange = time - m_changeTime;
 
 			float weightChange = m_startingDifference * s_changeFactor * Mathf.Pow(timeSinceChange, 3) * deltaTime;
-			weightChange = Mathf.Clamp(weightChange, -absCurrentDifference, absCurrentDifference);
-
-			m_weight -= weightChange;
-			return -weightChange;
+			return -Mathf.Clamp(weightChange, -absCurrentDifference, absCurrentDifference);
 		}
 
 		#endregion

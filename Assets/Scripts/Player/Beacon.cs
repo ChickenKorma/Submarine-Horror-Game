@@ -55,7 +55,8 @@ public class Beacon : MonoBehaviour
 
 	private void OnDestroy()
 	{
-		if (m_lastPing?.gameObject != null)
+		// Bit of a weird if statement to avoid null propogation using ? operator
+		if (m_lastPing is Ping lastPing && lastPing.gameObject != null)
 			Destroy(m_lastPing.gameObject);
 	}
 
