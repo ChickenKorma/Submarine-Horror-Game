@@ -14,31 +14,31 @@ public class WaypointEditorWindow : EditorWindow
 		GetWindow<WaypointEditorWindow>();
 	}
 
-	public Transform waypointRoot;
+	public Transform WaypointRoot;
 
 	private void OnGUI()
 	{
 		SerializedObject obj = new(this);
 
-		EditorGUILayout.PropertyField(obj.FindProperty("waypointRoot"));
+		EditorGUILayout.PropertyField(obj.FindProperty("WaypointRoot"));
 
-		if (waypointRoot == null)
+		if (WaypointRoot == null)
 		{
 			EditorGUILayout.HelpBox("No root transform selected!", MessageType.Warning);
 		}
 		else
 		{
-			DrawDivider();
+			EditorWindowTools.DrawDivider();
 
-			DrawHeader("Waypoint Controls");
+			EditorWindowTools.DrawHeader("Waypoint Controls");
 
 			EditorGUILayout.BeginVertical();
 			DrawWaypointControls();
 			EditorGUILayout.EndVertical();
 
-			DrawDivider();
+			EditorWindowTools.DrawDivider();
 
-			DrawHeader("Graph Controls");
+			EditorWindowTools.DrawHeader("Graph Controls");
 
 			EditorGUILayout.BeginVertical();
 			DrawGraphControls();
@@ -78,10 +78,10 @@ public class WaypointEditorWindow : EditorWindow
 			return CreateWaypoint(selectedWaypoints[0].transform.position);
 		else
 		{
-			Waypoint[] waypoints = waypointRoot.GetComponentsInChildren<Waypoint>();
+			Waypoint[] waypoints = WaypointRoot.GetComponentsInChildren<Waypoint>();
 
 			if (waypoints.Length != 0)
-				return CreateWaypoint(waypoints[waypoints.Length - 1].transform.position);
+				return CreateWaypoint(waypoints[^1].transform.position);
 		}
 
 		return CreateWaypoint();
@@ -89,8 +89,8 @@ public class WaypointEditorWindow : EditorWindow
 
 	private GameObject CreateWaypoint(Vector3 position = new Vector3())
 	{
-		GameObject waypointObj = new("Waypoint " + waypointRoot.childCount, typeof(Waypoint));
-		waypointObj.transform.SetParent(waypointRoot);
+		GameObject waypointObj = new("Waypoint " + WaypointRoot.childCount, typeof(Waypoint));
+		waypointObj.transform.SetParent(WaypointRoot);
 		waypointObj.transform.localPosition = position;
 
 		return waypointObj;
@@ -183,7 +183,7 @@ public class WaypointEditorWindow : EditorWindow
 
 	private void SaveGraph(string savePath)
 	{
-		Waypoint[] waypoints = waypointRoot.GetComponentsInChildren<Waypoint>();
+		Waypoint[] waypoints = WaypointRoot.GetComponentsInChildren<Waypoint>();
 		Node[] nodes = new Node[waypoints.Length];
 
 		for (int i = 0; i < waypoints.Length; i++)
@@ -230,42 +230,12 @@ public class WaypointEditorWindow : EditorWindow
 
 	private void DeleteGraph()
 	{
-		Waypoint[] waypoints = waypointRoot.GetComponentsInChildren<Waypoint>();
+		Waypoint[] waypoints = WaypointRoot.GetComponentsInChildren<Waypoint>();
 
 		for (int i = 0; i < waypoints.Length; i++)
 		{
 			DestroyImmediate(waypoints[i].gameObject);
 		}
-	}
-
-	#endregion
-
-	#region Helper methods
-
-	private static void DrawDivider(int thickness = 1, int padding = 30)
-	{
-		Rect r = EditorGUILayout.GetControlRect(GUILayout.Height(padding + thickness));
-		r.height = thickness;
-		r.y += padding / 2;
-		r.x -= 2;
-		r.width += 6;
-		EditorGUI.DrawRect(r, Color.grey);
-	}
-
-	private static void DrawHeader(string text)
-	{
-		GUIStyle style = EditorStyles.largeLabel;
-		style.fontStyle = FontStyle.Bold;
-
-		DrawLabel(text, style);
-	}
-
-	private static void DrawLabel(string text, GUIStyle style)
-	{
-		Vector2 size = style.CalcSize(new GUIContent(text));
-		Rect r = EditorGUILayout.GetControlRect(GUILayout.Height(size.y * 2));
-
-		EditorGUI.LabelField(r, text, style);
 	}
 
 	#endregion
