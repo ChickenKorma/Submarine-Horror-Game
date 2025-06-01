@@ -9,16 +9,22 @@ public class CreatureBehaviour : MonoBehaviour
 
 	public static CreatureBehaviour Instance { get; private set; }
 
+	[SerializeField] private Transform m_playerTransform;
+
+	[Header("Graph")]
 	[SerializeField] private string m_graphTextFileName;
 	[SerializeField] private int m_startingNodeIndex;
 
-	private WeightedNode[] m_nodes;
+	public WeightedNode[] Nodes { get; private set; }
 	private KDTree m_tree;
 
-	private List<WeightedNode> m_currentPath = new();
-	private WeightedNode m_currentNode;
-	private WeightedNode m_targetNode;
-	private Vector3 m_targetNodeNormalizedDirection;
+	public List<WeightedNode> CurrentPath { get; private set; } = new();
+	public WeightedNode CurrentNode;
+	public WeightedNode TargetNode;
+	private Vector3 TargetNodeNormalizedDirection;
+
+	private WeightedNode m_beaconNode;
+	private Vector3 m_beaconPosition;
 
 	private bool m_isOnGraph = true;
 	private bool m_returnToGraph;
@@ -26,22 +32,11 @@ public class CreatureBehaviour : MonoBehaviour
 
 	private float m_totalNodeWeight;
 
+	[Header("Behaviour Tuning")]
+	[SerializeField] private float m_nodeWeightNeutralizingSpeed;
+
 	[SerializeField] private float m_detectionThreshold;
 	[SerializeField] private float m_newWanderThreshold;
-
-	public float TotalVolumeFactor { get; private set; } = 1;
-
-	private float m_minGrowlDelay;
-	private float m_maxGrowlDelay;
-
-	[SerializeField] private float m_travelSpeed;
-	private float m_targetNodeDistance = 10000;
-	private float m_travelDistance = 0;
-
-	[SerializeField] private Transform m_playerTransform;
-
-	private WeightedNode m_beaconNode;
-	private Vector3 m_beaconPosition;
 
 	[SerializeField] private float m_attackDistance;
 	private float m_attackDistanceSquared;
@@ -49,7 +44,18 @@ public class CreatureBehaviour : MonoBehaviour
 	[SerializeField] private float m_beaconAttackDuration;
 	private bool m_isAttackingBeacon;
 
+	[SerializeField] private float m_travelSpeed;
+	private float TargetNodeDistance = 10000;
+	private float m_travelDistance = 0;
+
 	public Action AttackedPlayer = delegate { };
+
+	public float TotalVolumeFactor { get; private set; } = 1;
+
+
+	// Audio
+	private float m_minGrowlDelay;
+	private float m_maxGrowlDelay;
 
 	private Coroutine m_roaringCoroutine;
 	private Coroutine m_growlingCoroutine;
@@ -72,19 +78,19 @@ public class CreatureBehaviour : MonoBehaviour
 	{
 		GraphModel graphModel = GraphData.LoadGraph(Resources.Load<TextAsset>(m_graphTextFileName));
 
-		m_nodes = new WeightedNode[graphModel.Nodes.Length];
+		Nodes = new WeightedNode[graphModel.Nodes.Length];
 
 		for (int i = 0; i < graphModel.Nodes.Length; i++)
 		{
-			m_nodes[i] = new(graphModel.Nodes[i]);
+			Nodes[i] = new(graphModel.Nodes[i], m_nodeWeightNeutralizingSpeed);
 		}
 
-		m_tree = new(m_nodes);
+		m_tree = new(Nodes);
 
-		m_totalNodeWeight = m_nodes.Length;
+		m_totalNodeWeight = Nodes.Length;
 
-		m_currentNode = m_nodes[m_startingNodeIndex];
-		transform.position = m_currentNode.Node.Position;
+		CurrentNode = Nodes[m_startingNodeIndex];
+		transform.position = CurrentNode.Node.Position;
 
 		m_attackDistanceSquared = m_attackDistance * m_attackDistance;
 
@@ -101,8 +107,8 @@ public class CreatureBehaviour : MonoBehaviour
 		float time = Time.time;
 		float deltaTime = Time.deltaTime;
 
-		foreach (WeightedNode node in m_nodes)
-			ChangeNodeWeight(node, node.GetWeightChangeToNeutralize(time, deltaTime));
+		foreach (WeightedNode node in Nodes)
+			m_totalNodeWeight += node.NeutralizeWeight(time, deltaTime);
 
 		UpdateGrowlBehaviour();
 
@@ -116,25 +122,25 @@ public class CreatureBehaviour : MonoBehaviour
 			if (m_isOnGraph)
 			{
 				// If we have a target then move towards it
-				if (m_targetNode != null)
+				if (TargetNode != null)
 				{
 					UpdatePosition();
 
-					if (m_travelDistance >= m_targetNodeDistance)
+					if (m_travelDistance >= TargetNodeDistance)
 					{
 						// If we've reached the target then set the current node and reset progress
 						m_travelDistance = 0;
 
 						// Reduce target node weight if neutral
-						if (Mathf.Abs(1 - m_targetNode.Weight) < 0.01f)
-							ChangeNodeWeight(m_targetNode, -0.5f);
+						if (Mathf.Abs(1 - TargetNode.Weight) < 0.01f)
+							ChangeNodeWeight(TargetNode, -0.5f);
 
-						m_currentNode = m_targetNode;
-						transform.position = m_currentNode.Node.Position;
-						m_targetNode = null;
+						CurrentNode = TargetNode;
+						transform.position = CurrentNode.Node.Position;
+						TargetNode = null;
 
 						// If we've reached the node closest to the beacon or player then go off-graph and head directly to them
-						if (m_currentNode == m_beaconNode || m_currentNode == m_tree.GetNearestNode(m_playerTransform.position))
+						if (CurrentNode == m_beaconNode || CurrentNode == m_tree.GetNearestNode(m_playerTransform.position))
 						{
 							m_isOnGraph = false;
 							m_roaringCoroutine ??= StartCoroutine(PlayRoaringSounds());
@@ -144,7 +150,7 @@ public class CreatureBehaviour : MonoBehaviour
 					else
 						return;
 				}
-				if (m_currentPath.Count > 0)
+				if (CurrentPath.Count > 0)
 					IterateTarget();
 				else
 					StartNewWander();
@@ -154,7 +160,7 @@ public class CreatureBehaviour : MonoBehaviour
 				Vector3 targetPosition;
 
 				if (m_returnToGraph)
-					targetPosition = m_currentNode.Node.Position; // Move back towards where we left the node-based movement
+					targetPosition = CurrentNode.Node.Position; // Move back towards where we left the node-based movement
 				else if (m_isBeaconActive)
 					targetPosition = m_beaconPosition; // Move towards beacon
 				else
@@ -183,12 +189,25 @@ public class CreatureBehaviour : MonoBehaviour
 
 	#endregion
 
-	#region Graph
+	#region Nodes/Graph
+
+	private void ChangeNodeWeight(WeightedNode node, float weightChange)
+	{
+		node.Weight += weightChange;
+		m_totalNodeWeight += weightChange;
+	}
+
+	private void SetNodeWeight(WeightedNode node, float newWeight)
+	{
+		float oldWeight = node.Weight;
+		node.Weight = newWeight;
+		m_totalNodeWeight += newWeight - oldWeight;
+	}
 
 	// Shortest path between source and destination excluding source node in final path
 	private List<WeightedNode> GetShortestPath(WeightedNode source, WeightedNode destination)
 	{
-		WeightedNode[] nodes = m_nodes;
+		WeightedNode[] nodes = Nodes;
 
 		if (source == destination)
 			return new();
@@ -231,7 +250,7 @@ public class CreatureBehaviour : MonoBehaviour
 				for (int i = 0; i < connectionIndexes.Count; i++)
 				{
 					int adjacentIndex = connectionIndexes[i];
-					WeightedNode adjacentNode = m_nodes[adjacentIndex];
+					WeightedNode adjacentNode = Nodes[adjacentIndex];
 
 					if (isNodeVisited[adjacentIndex] == false)
 					{
@@ -269,7 +288,7 @@ public class CreatureBehaviour : MonoBehaviour
 	// Update the travel distance between nodes and the physical position of the creature
 	private void UpdatePosition()
 	{
-		Vector3 currentNodeToTargetNode = m_targetNode.Node.Position - m_currentNode.Node.Position;
+		Vector3 currentNodeToTargetNode = TargetNode.Node.Position - CurrentNode.Node.Position;
 		float moveDistance = m_travelSpeed * Time.deltaTime;
 
 		m_travelDistance += moveDistance;
@@ -283,13 +302,13 @@ public class CreatureBehaviour : MonoBehaviour
 
 		float cumulativeNodeWeight = 0;
 
-		for (int i = 0; i < m_nodes.Length; i++)
+		for (int i = 0; i < Nodes.Length; i++)
 		{
-			cumulativeNodeWeight += m_nodes[i].Weight;
+			cumulativeNodeWeight += Nodes[i].Weight;
 
 			if (cumulativeNodeWeight >= randomNodeWeightPoint)
 			{
-				SetPath(m_nodes[i]);
+				SetPath(Nodes[i]);
 				break;
 			}
 		}
@@ -299,61 +318,61 @@ public class CreatureBehaviour : MonoBehaviour
 	private void SetPath(WeightedNode destinationNode)
 	{
 		// Already at the destination
-		if (destinationNode == m_currentNode)
+		if (destinationNode == CurrentNode)
 		{
 			// If we're moving away from the destination then invert everything to turn back towards it
 			if (m_travelDistance > 0)
 			{
-				m_currentNode = m_targetNode;
-				m_targetNode = destinationNode;
+				CurrentNode = TargetNode;
+				TargetNode = destinationNode;
 
-				m_travelDistance = m_targetNodeDistance - m_travelDistance;
-				m_targetNodeNormalizedDirection = -m_targetNodeNormalizedDirection;
+				m_travelDistance = TargetNodeDistance - m_travelDistance;
+				TargetNodeNormalizedDirection = -TargetNodeNormalizedDirection;
 			}
 			else
 			{
-				m_targetNode = null;
+				TargetNode = null;
 
 				// Covers edge-case where the beacon is dropped near the current node exactly at the same time the creature arrives at that node
-				if (m_beaconNode == m_currentNode)
+				if (m_beaconNode == CurrentNode)
 					m_isOnGraph = false;
 			}
 
-			m_currentPath.Clear();
+			CurrentPath.Clear();
 		}
 		// Already heading towards the destination
-		else if (destinationNode == m_targetNode)
+		else if (destinationNode == TargetNode)
 		{
-			m_currentPath.Clear();
+			CurrentPath.Clear();
 		}
 		else
 		{
-			if (m_currentPath.Count > 0)
+			if (CurrentPath.Count > 0)
 			{
-				int index = m_currentPath.IndexOf(destinationNode);
+				int index = CurrentPath.IndexOf(destinationNode);
 
 				// Destination is within our current path
 				if (index != -1)
 				{
-					int removeCount = m_currentPath.Count - index - 1;
+					int removeCount = CurrentPath.Count - index - 1;
 
 					// Remove any nodes in the current path after the destination node
 					if (removeCount > 0)
-						m_currentPath.RemoveRange(index + 1, removeCount);
+						CurrentPath.RemoveRange(index + 1, removeCount);
 
 					return;
 				}
 			}
 
 			// Make a new path to the destination node.
-			if (m_targetNode == null)
+			if (TargetNode == null)
 			{
-				m_currentPath = GetShortestPath(m_currentNode, destinationNode);
+				CurrentPath = GetShortestPath(CurrentNode, destinationNode);
 				IterateTarget();
 			}
 			else
 			{
-				m_currentPath = GetShortestPath(m_targetNode, destinationNode);
+				CurrentPath = GetShortestPath(TargetNode, destinationNode);
 			}
 		}
 	}
@@ -361,14 +380,13 @@ public class CreatureBehaviour : MonoBehaviour
 	// Iterates the target node to the next node in the path
 	private void IterateTarget()
 	{
-		m_targetNode = m_currentPath[0];
+		TargetNode = CurrentPath[0];
 
-		m_currentPath.RemoveAt(0);
+		CurrentPath.RemoveAt(0);
 
-		Vector3 targetNodeDirection = m_targetNode.Node.Position - m_currentNode.Node.Position;
-		m_targetNodeNormalizedDirection = targetNodeDirection.normalized;
-		m_targetNodeDistance = Vector3.Magnitude(targetNodeDirection);
-
+		Vector3 targetNodeDirection = TargetNode.Node.Position - CurrentNode.Node.Position;
+		TargetNodeNormalizedDirection = targetNodeDirection.normalized;
+		TargetNodeDistance = Vector3.Magnitude(targetNodeDirection);
 	}
 
 	#endregion
@@ -424,12 +442,21 @@ public class CreatureBehaviour : MonoBehaviour
 
 	#region Sound Logging
 
-	// Adds weight to the closest node
+	// Adds weight to the closest node and it's connections
 	public void AddSound(Vector3 location, float volume)
 	{
 		WeightedNode closestNode = m_tree.GetNearestNode(location);
 
 		ChangeNodeWeight(closestNode, volume);
+
+		foreach (int connectionIndex in closestNode.Node.ConnectionIndexes)
+		{
+			WeightedNode connection = Nodes[connectionIndex];
+			ChangeNodeWeight(connection, volume * 0.25f);
+
+			foreach (int secondConnectionIndex in connection.Node.ConnectionIndexes)
+				ChangeNodeWeight(Nodes[secondConnectionIndex], volume * 0.05f);
+		}
 
 		UpdateGrowlBehaviour();
 
@@ -461,19 +488,6 @@ public class CreatureBehaviour : MonoBehaviour
 		SetPath(m_beaconNode);
 	}
 
-	private void ChangeNodeWeight(WeightedNode node, float weightChange)
-	{
-		node.Weight += weightChange;
-		m_totalNodeWeight += weightChange;
-	}
-
-	private void SetNodeWeight(WeightedNode node, float newWeight)
-	{
-		float oldWeight = node.Weight;
-		node.Weight = newWeight;
-		m_totalNodeWeight += newWeight - oldWeight;
-	}
-
 	#endregion
 
 	#region Audio
@@ -503,7 +517,7 @@ public class CreatureBehaviour : MonoBehaviour
 	// Updates the growl volume and delays when the total node weight has changed
 	private void UpdateGrowlBehaviour()
 	{
-		TotalVolumeFactor = m_nodes.Length / m_totalNodeWeight;
+		TotalVolumeFactor = Nodes.Length / m_totalNodeWeight;
 
 		AudioManager.Instance.SetCreatureGrowlVolume(TotalVolumeFactor);
 
@@ -515,14 +529,16 @@ public class CreatureBehaviour : MonoBehaviour
 
 	#region Nested Classes
 
-	private class WeightedNode
+	public class WeightedNode
 	{
 		#region Construction
 
-		public WeightedNode(Node node)
+		public WeightedNode(Node node, float nodeWeightNeutralizingSpeed)
 		{
 			Node = node;
 			Weight = 1;
+
+			m_weightNeutralizingSpeed = nodeWeightNeutralizingSpeed;
 		}
 
 		#endregion
@@ -548,14 +564,14 @@ public class CreatureBehaviour : MonoBehaviour
 		private float m_changeTime;
 		private float m_startingDifference;
 
-		private const float s_changeFactor = 1.9E-6f;
+		private readonly float m_weightNeutralizingSpeed;
 
 		#endregion
 
 		#region Implementation
 
 		// Uses cubic ease out curve to reduce the node weight back to 1
-		public float GetWeightChangeToNeutralize(float time, float deltaTime)
+		public float NeutralizeWeight(float time, float deltaTime)
 		{
 			if (Weight == 1)
 				return 0;
@@ -564,12 +580,18 @@ public class CreatureBehaviour : MonoBehaviour
 			float absCurrentDifference = Mathf.Abs(currentDifference);
 
 			if (absCurrentDifference < 0.01f)
+			{
+				m_weight -= currentDifference;
 				return -currentDifference;
+			}
 
 			float timeSinceChange = time - m_changeTime;
 
-			float weightChange = m_startingDifference * s_changeFactor * Mathf.Pow(timeSinceChange, 3) * deltaTime;
-			return -Mathf.Clamp(weightChange, -absCurrentDifference, absCurrentDifference);
+			float weightChange = m_startingDifference * m_weightNeutralizingSpeed * Mathf.Pow(timeSinceChange, 3) * deltaTime;
+			weightChange = Mathf.Clamp(weightChange, -absCurrentDifference, absCurrentDifference);
+
+			m_weight -= weightChange;
+			return -weightChange;
 		}
 
 		#endregion
