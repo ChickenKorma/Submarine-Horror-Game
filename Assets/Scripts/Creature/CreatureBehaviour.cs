@@ -52,6 +52,21 @@ public class CreatureBehaviour : MonoBehaviour
 
 	public float TotalVolumeFactor { get; private set; } = 1;
 
+	[Header("Menace Gauge")]
+	[SerializeField] private float m_menaceIterateTimeStep;
+
+	[SerializeField] private float m_menaceLowerThreshold;
+	[SerializeField] private float m_menaceHigherThreshold;
+
+	[SerializeField] private float m_menaceFactorDistance;
+	[SerializeField] private float m_neutralMenaceDistance;
+
+	[SerializeField] private float m_menaceFactorNodeDistance;
+	[SerializeField] private int m_neutralMenaceNodeDistance;
+
+	[SerializeField] private float m_beaconDestroyMenaceChange;
+
+	private float m_menace;
 
 	// Audio
 	private float m_minGrowlDelay;
@@ -96,6 +111,8 @@ public class CreatureBehaviour : MonoBehaviour
 
 		UpdateGrowlBehaviour();
 		m_growlingCoroutine = StartCoroutine(PlayGrowlingSounds());
+
+		StartCoroutine(CheckMenace());
 	}
 
 	private void Update()
@@ -199,6 +216,9 @@ public class CreatureBehaviour : MonoBehaviour
 
 	private void SetNodeWeight(WeightedNode node, float newWeight)
 	{
+		if (node.Weight == newWeight)
+			return;
+
 		float oldWeight = node.Weight;
 		node.Weight = newWeight;
 		m_totalNodeWeight += newWeight - oldWeight;
@@ -391,6 +411,103 @@ public class CreatureBehaviour : MonoBehaviour
 
 	#endregion
 
+	#region Menace Gauge
+
+	private IEnumerator CheckMenace()
+	{
+		while (!m_gameOver)
+		{
+			yield return new WaitForSeconds(m_menaceIterateTimeStep);
+
+			UpdateMenace();
+		}
+	}
+
+	private void UpdateMenace()
+	{
+		float distance = Vector3.Distance(transform.position, m_playerTransform.position);
+		int nodeDistance = GetShortestPath(CurrentNode, m_tree.GetNearestNode(m_playerTransform.position)).Count;
+
+		// Menace increases if the creature is close and vice versa.
+		m_menace = ((m_neutralMenaceDistance - distance) / m_menaceFactorDistance) + ((m_neutralMenaceDistance - nodeDistance) / m_menaceFactorNodeDistance);
+
+		CoerceMenace();
+	}
+
+	private void ChangeMenace(float menaceChange)
+	{
+		m_menace += menaceChange;
+
+		CoerceMenace();
+	}
+
+	private void CoerceMenace()
+	{
+		WeightedNode[] nodes = null;
+
+		// Make this dependent on how far menace is from threshold
+		float newWeight = 0;
+
+		if (m_menace <= m_menaceLowerThreshold)
+			nodes = GetNodesWithinFrustum(m_playerTransform.position, m_playerTransform.forward, 0, 100, 0, 35, 5, 15);
+		else if (m_menace >= m_menaceHigherThreshold)
+			nodes = GetNodesWithinFrustum(Vector3.zero, -m_playerTransform.position, 30, 100, 10, 40, 5, 15);
+
+		if (nodes is not null)
+		{
+			foreach (WeightedNode node in Nodes)
+			{
+				if (nodes.Contains(node))
+					SetNodeWeight(node, newWeight);
+				else
+					SetNodeWeight(node, 1);
+			}
+		}
+	}
+
+	private WeightedNode[] GetNodesWithinFrustum(
+		Vector3 origin,
+		Vector3 direction,
+		float startLength,
+		float endLength,
+		float startRadius,
+		float endRadius,
+		float minimumPointSpacing,
+		float angleFactor)
+	{
+		List<WeightedNode> nodes = new();
+
+		float lengthDifference = endLength - startLength;
+		float radiusDifference = endRadius - startRadius;
+
+		Quaternion rotation = Quaternion.FromToRotation(Vector3.forward, direction);
+
+		for (float i = startLength; i <= endLength; i += lengthDifference / Mathf.Floor(lengthDifference / minimumPointSpacing))
+		{
+			float radius = (((i - startLength) / lengthDifference) * radiusDifference) + startRadius;
+
+			for (float j = 0; j <= radius; j += radius / (int)Math.Floor(radius / minimumPointSpacing))
+			{
+				for (float angle = 0; angle <= 2 * Mathf.PI; angle += radius / angleFactor)
+				{
+					float x = (radius * Mathf.Cos(angle)) + origin.x;
+					float y = (radius * Mathf.Sin(angle)) + origin.y;
+					float z = i + origin.z;
+
+					Vector3 point = rotation * new Vector3(x, y, z);
+					WeightedNode node = m_tree.GetNearestNode(point);
+
+					if (!nodes.Contains(node))
+						nodes.Add(node);
+				}
+			}
+		}
+
+		return nodes.ToArray();
+	}
+
+	#endregion
+
 	#region Attacking
 
 	// Returns true if creature is close enough to attack something, otherwise false
@@ -425,6 +542,8 @@ public class CreatureBehaviour : MonoBehaviour
 
 		// Reset the beacon node weight as it could be very high
 		SetNodeWeight(m_beaconNode, 1);
+
+		ChangeMenace(m_beaconDestroyMenaceChange);
 
 		StartCoroutine(AttackingBeacon());
 	}
