@@ -1,203 +1,209 @@
+using Creature;
+using Exit;
+using Player;
 using System.Collections;
 using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
 
-public class UIManager : MonoBehaviour
+namespace Managers
 {
-	#region Variables
-
-	private bool m_inGame = true;
-
-	[Header("Screens")]
-	[SerializeField] private GameObject m_gameOverScreen;
-	[SerializeField] private GameObject m_gameWonScreen;
-	[SerializeField] private GameObject m_pauseScreen;
-
-	[Header("Sonar Use Indicator")]
-	[SerializeField] private Color m_red;
-	[SerializeField] private Color m_green;
-
-	[SerializeField] private Image m_pingIndicatorPanel;
-	[SerializeField] private TMP_Text m_pingIndicatorText;
-
-	[Header("Beacon Use Indicator")]
-	[SerializeField] private Slider m_beaconInputSlider;
-	[SerializeField] private TMP_Text m_beaconsRemainingText;
-
-	[Header("Motion Detector")]
-	[SerializeField] private Transform m_creatureTransform;
-	[SerializeField] private Transform m_playerTransform;
-	[SerializeField] private Transform m_exitTransform;
-
-	private Vector3 m_creaturePosition;
-
-	[SerializeField] private RectTransform m_creatureIndicatorTransform;
-	[SerializeField] private RectTransform m_beaconIndicatorTransform;
-	[SerializeField] private RectTransform m_exitIndicatorTransform;
-
-	private Animator m_creatureIndicatorAnimator;
-	private Animator m_beaconIndicatorAnimator;
-
-	[SerializeField] private float m_maxIndicatedObjectDistance;
-	[SerializeField] private float m_maxIndicatorScreenDistance;
-
-	[SerializeField] private float m_creatureMinFlashSpeed;
-	[SerializeField] private float m_creatureMaxFlashSpeed;
-	[SerializeField] private float m_beaconFlashSpeed;
-
-	private static Vector2 s_motionIndicatorPositionOffset = new(-100, 100);
-
-	#endregion
-
-	#region Unity
-
-	private void Awake()
+	public class UIManager : MonoBehaviour
 	{
-		m_gameOverScreen.SetActive(false);
-		m_gameWonScreen.SetActive(false);
+		#region Variables
 
-		m_creatureIndicatorAnimator = m_creatureIndicatorTransform.GetComponent<Animator>();
+		private bool m_inGame = true;
 
-		m_beaconIndicatorAnimator = m_beaconIndicatorTransform.GetComponent<Animator>();
-		m_beaconIndicatorAnimator.speed = m_beaconFlashSpeed;
-	}
+		[Header("Screens")]
+		[SerializeField] private GameObject m_gameOverScreen;
+		[SerializeField] private GameObject m_gameWonScreen;
+		[SerializeField] private GameObject m_pauseScreen;
 
-	private void Start()
-	{
-		UpdateBeaconIndicator(0);
+		[Header("Sonar Use Indicator")]
+		[SerializeField] private Color m_red;
+		[SerializeField] private Color m_green;
 
-		StartCoroutine(FlashCreatureIndicator());
-		StartCoroutine(FlashBeaconIndicator());
-	}
+		[SerializeField] private Image m_pingIndicatorPanel;
+		[SerializeField] private TMP_Text m_pingIndicatorText;
 
-	private void Update()
-	{
-		UpdateExitIndicator();
+		[Header("Beacon Use Indicator")]
+		[SerializeField] private Slider m_beaconInputSlider;
+		[SerializeField] private TMP_Text m_beaconsRemainingText;
 
-		UpdateMotionIndicator(m_creatureIndicatorTransform, m_creaturePosition);
+		[Header("Motion Detector")]
+		[SerializeField] private Transform m_creatureTransform;
+		[SerializeField] private Transform m_playerTransform;
+		[SerializeField] private Transform m_exitTransform;
 
-		if (Beacon.Instance != null)
-			UpdateMotionIndicator(m_beaconIndicatorTransform, Beacon.Instance.transform.position);
-	}
+		private Vector3 m_creaturePosition;
 
-	private void OnEnable()
-	{
-		ExitDetection.Instance.GameWon += GameWon;
+		[SerializeField] private RectTransform m_creatureIndicatorTransform;
+		[SerializeField] private RectTransform m_beaconIndicatorTransform;
+		[SerializeField] private RectTransform m_exitIndicatorTransform;
 
-		CreatureBehaviour.Instance.AttackedPlayer += GameOver;
+		private Animator m_creatureIndicatorAnimator;
+		private Animator m_beaconIndicatorAnimator;
 
-		Sonar.Instance.PingStateChanged += UpdateSonarIndicator;
-		Sonar.Instance.BeaconInputHold += UpdateBeaconIndicator;
-		Sonar.Instance.BeaconsRemainingChanged += UpdateBeaconsRemaining;
+		[SerializeField] private float m_maxIndicatedObjectDistance;
+		[SerializeField] private float m_maxIndicatorScreenDistance;
 
-		InputManager.Instance.PauseEvent += TogglePauseScreen;
-	}
+		[SerializeField] private float m_creatureMinFlashSpeed;
+		[SerializeField] private float m_creatureMaxFlashSpeed;
+		[SerializeField] private float m_beaconFlashSpeed;
 
-	private void OnDisable()
-	{
-		ExitDetection.Instance.GameWon -= GameWon;
+		private static Vector2 s_motionIndicatorPositionOffset = new(-100, 100);
 
-		CreatureBehaviour.Instance.AttackedPlayer -= GameOver;
+		#endregion
 
-		Sonar.Instance.PingStateChanged -= UpdateSonarIndicator;
-		Sonar.Instance.BeaconInputHold -= UpdateBeaconIndicator;
-		Sonar.Instance.BeaconsRemainingChanged -= UpdateBeaconsRemaining;
+		#region Unity
 
-		InputManager.Instance.PauseEvent -= TogglePauseScreen;
-	}
-
-	#endregion
-
-	#region Game States
-
-	private void GameOver()
-	{
-		m_gameOverScreen.SetActive(true);
-	}
-
-	private void GameWon()
-	{
-		m_gameWonScreen.SetActive(true);
-	}
-
-	public void TogglePauseScreen()
-	{
-		m_pauseScreen.SetActive(GameManager.Instance.IsPaused);
-	}
-
-	#endregion
-
-	#region Sonar
-
-	private void UpdateSonarIndicator(bool pingEnabled)
-	{
-		if (pingEnabled)
+		private void Awake()
 		{
-			m_pingIndicatorPanel.color = m_red;
-			m_pingIndicatorText.text = "Pinging";
+			m_gameOverScreen.SetActive(false);
+			m_gameWonScreen.SetActive(false);
+
+			m_creatureIndicatorAnimator = m_creatureIndicatorTransform.GetComponent<Animator>();
+
+			m_beaconIndicatorAnimator = m_beaconIndicatorTransform.GetComponent<Animator>();
+			m_beaconIndicatorAnimator.speed = m_beaconFlashSpeed;
 		}
-		else
+
+		private void Start()
 		{
-			m_pingIndicatorPanel.color = m_green;
-			m_pingIndicatorText.text = "Ping available";
+			UpdateBeaconIndicator(0);
+
+			StartCoroutine(FlashCreatureIndicator());
+			StartCoroutine(FlashBeaconIndicator());
 		}
-	}
 
-	private void UpdateBeaconIndicator(float holdProgress) => m_beaconInputSlider.value = holdProgress;
-
-	private void UpdateBeaconsRemaining(int beaconsRemaining) => m_beaconsRemainingText.text = $"{beaconsRemaining} left";
-
-	#endregion
-
-	#region Motion indicator
-
-	private IEnumerator FlashCreatureIndicator()
-	{
-		while (m_inGame)
+		private void Update()
 		{
-			float creatureIndicatorFlashSpeed = m_creatureMaxFlashSpeed - (CreatureBehaviour.Instance.TotalVolumeFactor * (m_creatureMaxFlashSpeed - m_creatureMinFlashSpeed));
-			m_creatureIndicatorAnimator.speed = creatureIndicatorFlashSpeed;
+			UpdateExitIndicator();
 
-			m_creaturePosition = m_creatureTransform.position;
+			UpdateMotionIndicator(m_creatureIndicatorTransform, m_creaturePosition);
 
-			m_creatureIndicatorAnimator.SetTrigger("Flash");
-			AudioManager.Instance.PlayMotionDetectorBeep();
-
-			yield return new WaitForSeconds(1.05f * (1 / creatureIndicatorFlashSpeed));
-		}
-	}
-
-	private IEnumerator FlashBeaconIndicator()
-	{
-		while (m_inGame)
-		{
 			if (Beacon.Instance != null)
-				m_beaconIndicatorAnimator.SetTrigger("Flash");
-
-			yield return new WaitForSeconds(1.05f * (1 / m_beaconFlashSpeed));
+				UpdateMotionIndicator(m_beaconIndicatorTransform, Beacon.Instance.transform.position);
 		}
+
+		private void OnEnable()
+		{
+			ExitDetection.Instance.GameWon += GameWon;
+
+			CreatureBehaviour.Instance.AttackedPlayer += GameOver;
+
+			Sonar.Instance.PingStateChanged += UpdateSonarIndicator;
+			Sonar.Instance.BeaconInputHold += UpdateBeaconIndicator;
+			Sonar.Instance.BeaconsRemainingChanged += UpdateBeaconsRemaining;
+
+			InputManager.Instance.PauseEvent += TogglePauseScreen;
+		}
+
+		private void OnDisable()
+		{
+			ExitDetection.Instance.GameWon -= GameWon;
+
+			CreatureBehaviour.Instance.AttackedPlayer -= GameOver;
+
+			Sonar.Instance.PingStateChanged -= UpdateSonarIndicator;
+			Sonar.Instance.BeaconInputHold -= UpdateBeaconIndicator;
+			Sonar.Instance.BeaconsRemainingChanged -= UpdateBeaconsRemaining;
+
+			InputManager.Instance.PauseEvent -= TogglePauseScreen;
+		}
+
+		#endregion
+
+		#region Game States
+
+		private void GameOver()
+		{
+			m_gameOverScreen.SetActive(true);
+		}
+
+		private void GameWon()
+		{
+			m_gameWonScreen.SetActive(true);
+		}
+
+		public void TogglePauseScreen()
+		{
+			m_pauseScreen.SetActive(GameManager.Instance.IsPaused);
+		}
+
+		#endregion
+
+		#region Sonar
+
+		private void UpdateSonarIndicator(bool pingEnabled)
+		{
+			if (pingEnabled)
+			{
+				m_pingIndicatorPanel.color = m_red;
+				m_pingIndicatorText.text = "Pinging";
+			}
+			else
+			{
+				m_pingIndicatorPanel.color = m_green;
+				m_pingIndicatorText.text = "Ping available";
+			}
+		}
+
+		private void UpdateBeaconIndicator(float holdProgress) => m_beaconInputSlider.value = holdProgress;
+
+		private void UpdateBeaconsRemaining(int beaconsRemaining) => m_beaconsRemainingText.text = $"{beaconsRemaining} left";
+
+		#endregion
+
+		#region Motion indicator
+
+		private IEnumerator FlashCreatureIndicator()
+		{
+			while (m_inGame)
+			{
+				float creatureIndicatorFlashSpeed = m_creatureMaxFlashSpeed - (CreatureBehaviour.Instance.TotalVolumeFactor * (m_creatureMaxFlashSpeed - m_creatureMinFlashSpeed));
+				m_creatureIndicatorAnimator.speed = creatureIndicatorFlashSpeed;
+
+				m_creaturePosition = m_creatureTransform.position;
+
+				m_creatureIndicatorAnimator.SetTrigger("Flash");
+				AudioManager.Instance.PlayMotionDetectorBeep();
+
+				yield return new WaitForSeconds(1.05f * (1 / creatureIndicatorFlashSpeed));
+			}
+		}
+
+		private IEnumerator FlashBeaconIndicator()
+		{
+			while (m_inGame)
+			{
+				if (Beacon.Instance != null)
+					m_beaconIndicatorAnimator.SetTrigger("Flash");
+
+				yield return new WaitForSeconds(1.05f * (1 / m_beaconFlashSpeed));
+			}
+		}
+
+		private void UpdateMotionIndicator(RectTransform indicatorTransform, Vector3 targetPosition)
+		{
+			Vector3 directionToTarget = m_playerTransform.worldToLocalMatrix.MultiplyPoint(targetPosition);
+
+			float detectorMagnitude = Mathf.Clamp(directionToTarget.magnitude / m_maxIndicatedObjectDistance, 0, 1);
+
+			directionToTarget.Normalize();
+			directionToTarget *= detectorMagnitude * m_maxIndicatorScreenDistance;
+
+			indicatorTransform.anchoredPosition = new Vector2(directionToTarget.x, directionToTarget.z) + s_motionIndicatorPositionOffset;
+		}
+
+		private void UpdateExitIndicator()
+		{
+			Vector3 directionToExit = m_playerTransform.worldToLocalMatrix.MultiplyPoint(m_exitTransform.position).normalized;
+
+			Vector3 currentEulerAngles = m_exitIndicatorTransform.rotation.eulerAngles;
+			m_exitIndicatorTransform.rotation = Quaternion.Euler(currentEulerAngles.x, currentEulerAngles.y, (Mathf.Rad2Deg * Mathf.Atan2(directionToExit.z, directionToExit.x)) - 90f);
+		}
+
+		#endregion
 	}
-
-	private void UpdateMotionIndicator(RectTransform indicatorTransform, Vector3 targetPosition)
-	{
-		Vector3 directionToTarget = m_playerTransform.worldToLocalMatrix.MultiplyPoint(targetPosition);
-
-		float detectorMagnitude = Mathf.Clamp(directionToTarget.magnitude / m_maxIndicatedObjectDistance, 0, 1);
-
-		directionToTarget.Normalize();
-		directionToTarget *= detectorMagnitude * m_maxIndicatorScreenDistance;
-
-		indicatorTransform.anchoredPosition = new Vector2(directionToTarget.x, directionToTarget.z) + s_motionIndicatorPositionOffset;
-	}
-
-	private void UpdateExitIndicator()
-	{
-		Vector3 directionToExit = m_playerTransform.worldToLocalMatrix.MultiplyPoint(m_exitTransform.position).normalized;
-
-		Vector3 currentEulerAngles = m_exitIndicatorTransform.rotation.eulerAngles;
-		m_exitIndicatorTransform.rotation = Quaternion.Euler(currentEulerAngles.x, currentEulerAngles.y, (Mathf.Rad2Deg * Mathf.Atan2(directionToExit.z, directionToExit.x)) - 90f);
-	}
-
-	#endregion
 }
