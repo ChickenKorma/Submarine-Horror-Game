@@ -52,7 +52,7 @@ namespace EditorTools
 		{
 			if (CreatureBehaviour.Instance != null)
 			{
-				foreach (CreatureBehaviour.WeightedNode node in CreatureBehaviour.Instance.Nodes)
+				foreach (WeightedNode node in CreatureBehaviour.Instance.Nodes)
 				{
 					float hue = 0.333f;
 
